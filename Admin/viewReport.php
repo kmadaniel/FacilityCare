@@ -232,13 +232,16 @@
 
                                 <hr>
 
+                                <!-- comment_form.php -->
                                 <div class="mb-4">
                                     <h6 class="mb-3">Add Comment</h6>
-                                    <textarea class="form-control mb-2" rows="3" placeholder="Add a comment or update..."></textarea>
-                                    <button class="btn btn-primary w-100">
-                                        <i class="bi bi-send me-1"></i> Post Comment
-                                    </button>
+                                    <form method="POST" action="">
+                                        <input type="hidden" name="report_id" value="<?= htmlspecialchars($report_id) ?>">
+                                        <textarea class="form-control mb-2" name="notes" rows="3"placeholder="Add a comment or update..." required></textarea>
+                                        <button class="btn btn-primary w-100" type="submit">Post Comment</button>
+                                    </form>
                                 </div>
+
 
                                 <hr>
 
@@ -350,6 +353,7 @@
             modal.show();
         }
     </script>
+
 </body>
 
 </html>
