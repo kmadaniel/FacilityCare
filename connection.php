@@ -1,7 +1,7 @@
 <?php
 // Database configuration
 $host = 'localhost'; // Hostname or IP address of the server
-$dbname = 'maintenance'; // Name of the database
+$dbname = 'facilitycare'; // Name of the database
 $username = 'root'; // Database username
 $password = ''; // Database password
 

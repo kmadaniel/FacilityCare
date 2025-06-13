@@ -1,80 +1,4 @@
-<?php
-session_start();
-require_once '../connection.php';
-
-$report_id = $_GET['id'] ?? null;
-if (!$report_id) {
-    die("Invalid report ID.");
-}
-
-// Insert 'open' status only if not already 'open'
-if (isset($_GET['open']) && $_GET['open'] == 1 && isset($_SESSION['user_id'])) {
-    $user_id = $_SESSION['user_id'];
-
-    // Check if latest status is not 'open'
-    $checkStmt = $pdo->prepare("
-        SELECT status FROM StatusLog 
-        WHERE report_id = ? 
-        ORDER BY timestamp DESC 
-        LIMIT 1
-    ");
-    $checkStmt->execute([$report_id]);
-    $latestStatus = $checkStmt->fetchColumn();
-
-    if ($latestStatus !== 'open') {
-        $insertStmt = $pdo->prepare("
-            INSERT INTO StatusLog (report_id, status, notes, changed_by, timestamp)
-            VALUES (?, 'open', NULL, ?, NOW())
-        ");
-        $insertStmt->execute([$report_id, $user_id]);
-    }
-
-    // Redirect to clean URL (without &open=1)
-    header("Location: viewReport.php?id=" . $report_id);
-    exit();
-}
-
-// Fetch report info
-$stmt = $pdo->prepare("
-    SELECT r.*, u.name AS reporter_name, u.email AS reporter_email
-    FROM Report r
-    JOIN User u ON r.user_id = u.user_id
-    WHERE r.report_id = ?
-");
-$stmt->execute([$report_id]);
-$report = $stmt->fetch();
-
-if (!$report) {
-    die("Report not found.");
-}
-
-// Fetch media files
-$mediaStmt = $pdo->prepare("SELECT file_path, media_type FROM Media WHERE report_id = :id");
-$mediaStmt->execute(['id' => $report_id]);
-$mediaFiles = $mediaStmt->fetchAll();
-
-// Fetch current status
-$statusStmt = $pdo->prepare("
-    SELECT status, notes, changed_by, timestamp 
-    FROM StatusLog 
-    WHERE report_id = ? 
-    ORDER BY timestamp DESC 
-    LIMIT 1
-");
-$statusStmt->execute([$report_id]);
-$currentStatus = $statusStmt->fetch();
-
-// Fetch all status history
-$historyStmt = $pdo->prepare("
-    SELECT sl.status, sl.notes, sl.timestamp, u.name AS changed_by 
-    FROM StatusLog sl
-    JOIN User u ON u.user_id = sl.changed_by
-    WHERE sl.report_id = ?
-    ORDER BY sl.timestamp DESC
-");
-$historyStmt->execute([$report_id]);
-$statusHistory = $historyStmt->fetchAll();
-?>
+<?php include("../backend/process_viewReport.php"); ?>
 
 
 <!DOCTYPE html>
@@ -123,7 +47,7 @@ $statusHistory = $historyStmt->fetchAll();
                     <hr class="text-white-50">
                     <div class="dropdown">
                         <a href="#" class="d-flex justify-content-center align-items-center text-white text-decoration-none dropdown-toggle" data-bs-toggle="dropdown">
-                                                       <strong> <?php echo isset($_SESSION['name']) ? htmlspecialchars($_SESSION['name']) : 'Staff User'; ?></strong>
+                            <strong> <?php echo isset($_SESSION['name']) ? htmlspecialchars($_SESSION['name']) : 'Staff User'; ?></strong>
                         </a>
                         <ul class="dropdown-menu dropdown-menu-dark text-small shadow">
                             <li><a class="dropdown-item" href="#"><i class="bi bi-person me-2"></i>Profile</a></li>
@@ -141,9 +65,11 @@ $statusHistory = $historyStmt->fetchAll();
                 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
                     <h1 class="h2">Maintenance Report Details</h1>
                     <div class="btn-toolbar mb-2 mb-md-0">
-                        <button class="btn btn-sm btn-outline-secondary me-2">
+                        <a class="btn btn-sm btn-outline-secondary me-2" href="allReports.php">
                             <i class="bi bi-arrow-left me-1"></i> Back
-                        </button>
+                        </a>
+
+
                         <button class="btn btn-sm btn-danger me-2">
                             <i class="bi bi-trash me-1"></i> Delete
                         </button>
@@ -191,7 +117,7 @@ $statusHistory = $historyStmt->fetchAll();
                                     <div class="col-md-6">
                                         <h6 class="mb-2"><i class="bi bi-person me-2"></i> Reported By</h6>
                                         <div class="d-flex align-items-center">
-                                            <img src="https://via.placeholder.com/40" class="rounded-circle me-2" width="40" height="40">
+                                            <img src="https://via.placeholder.com/40" class="rounded-circle me-2" width="40" height="40" hidden>
                                             <div>
                                                 <p class="mb-0"><?= htmlspecialchars($report['reporter_name']) ?></p>
                                                 <small class="text-muted"><?= htmlspecialchars($report['reporter_email']) ?></small>
@@ -277,7 +203,16 @@ $statusHistory = $historyStmt->fetchAll();
                                     <div class="d-flex align-items-center">
                                         <i class="bi bi-hourglass-split me-2" style="font-size: 1.5rem;"></i>
                                         <div>
-                                            <h6 class="alert-heading mb-1">In Progress</h6>
+                                            <h6 class="alert-heading mb-1">
+                                                <span <?= match (strtolower($currentStatus['status'] ?? 'pending')) {
+                                                            'inprogress' => 'status-progress',
+                                                            'resolved' => 'status-resolved',
+                                                            'open' => 'status-open',
+                                                            default => 'status-open'
+                                                        } ?>">
+                                                    <?= ucfirst($currentStatus['status'] ?? 'Pending') ?>
+                                                </span>
+                                            </h6>
                                             <p class="mb-0">Assigned to: Hamzah (Plumber)</p>
                                         </div>
                                     </div>
@@ -312,7 +247,7 @@ $statusHistory = $historyStmt->fetchAll();
                                     <ul class="list-group list-group-flush">
                                         <li class="list-group-item px-0 d-flex justify-content-between">
                                             <span>Priority:</span>
-                                            <span class="badge urgency-high">High</span>
+                                            <span class="badge urgency-<?= strtolower($report['priority']) ?> me-2"><?= ucfirst($report['priority']) ?></span>
                                         </li>
                                         <li class="list-group-item px-0 d-flex justify-content-between">
                                             <span>Assigned To:</span>
@@ -324,11 +259,11 @@ $statusHistory = $historyStmt->fetchAll();
                                         </li>
                                         <li class="list-group-item px-0 d-flex justify-content-between">
                                             <span>Created:</span>
-                                            <span>15 Jul 2025, 10:45 AM</span>
+                                            <span><?= date("d M Y, h:i A", strtotime($report['created_at'])) ?></span>
                                         </li>
                                         <li class="list-group-item px-0 d-flex justify-content-between">
                                             <span>Last Updated:</span>
-                                            <span>16 Jul 2025, 02:30 PM</span>
+                                            <span><?= isset($currentStatus['timestamp']) ? date("d M Y, h:i A", strtotime($currentStatus['timestamp'])) : '-' ?></span>
                                         </li>
                                     </ul>
                                 </div>
