@@ -29,7 +29,7 @@
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="allTask.php">
+                            <a class="nav-link" href="allTasks.php">
                                 <i class="fas fa-tasks me-2"></i> My Assignments
                             </a>
                         </li>
