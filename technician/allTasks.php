@@ -23,23 +23,18 @@
                     <hr class="text-white-50">
                     <ul class="nav nav-pills flex-column mb-auto">
                         <li class="nav-item">
-                            <a class="nav-link active" href="dashboardTech.php">
+                            <a class="nav-link active" href="dashboardT.php">
                                 <i class="fas fa-tachometer-alt me-2"></i> Dashboard
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="allTasks.php">
+                            <a class="nav-link" href="allTask.php">
                                 <i class="fas fa-tasks me-2"></i> My Assignments
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="#">
+                            <a class="nav-link" href="taskhistory.php">
                                 <i class="fas fa-history me-2"></i> Work History
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="#">
-                                <i class="fas fa-tools me-2"></i> Equipment
                             </a>
                         </li>
                     </ul>
@@ -133,7 +128,7 @@
                     <div class="card-body">
                         <div class="list-group list-group-flush">
                             <!-- High Priority Assignment -->
-                            <a href="#" class="list-group-item list-group-item-action assignment-card priority-high">
+                            <a href="taskDetail.php" class="list-group-item list-group-item-action assignment-card priority-high">
                                 <div class="d-flex w-100 justify-content-between">
                                     <h6 class="mb-1">
                                         <i class="fas fa-exclamation-circle text-danger me-2"></i>

@@ -24,23 +24,18 @@
                     <hr class="text-white-50">
                     <ul class="nav nav-pills flex-column mb-auto">
                         <li class="nav-item">
-                            <a class="nav-link active" href="dashboardTech.php">
+                            <a class="nav-link active" href="dashboardT.php">
                                 <i class="fas fa-tachometer-alt me-2"></i> Dashboard
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="allTasks.php">
+                            <a class="nav-link" href="allTask.php">
                                 <i class="fas fa-tasks me-2"></i> My Assignments
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="#">
+                            <a class="nav-link" href="taskhistory.php">
                                 <i class="fas fa-history me-2"></i> Work History
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="#">
-                                <i class="fas fa-tools me-2"></i> Equipment
                             </a>
                         </li>
                     </ul>
@@ -125,7 +120,7 @@
                     </div>
                     <div class="card-body">
                         <div class="list-group list-group-flush">
-                            <a href="#" class="list-group-item list-group-item-action">
+                            <a href="taskDetail.php" class="list-group-item list-group-item-action">
                                 <div class="d-flex w-100 justify-content-between">
                                     <h6 class="mb-1">Leaking pipe in restroom</h6>
                                     <span class="badge badge-tech badge-assigned">Assigned</span>
