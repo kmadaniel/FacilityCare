@@ -1,8 +1,8 @@
-<?php session_start(); 
+<?php include("backend/process_index.php");
 if (!isset($_SESSION['user_id'])) {
-    header("Location: homepage.php"); 
+    header("Location: homepage.php");
     exit();
-}?>
+} ?>
 
 <!DOCTYPE html>
 <html lang="en">
@@ -65,7 +65,12 @@ if (!isset($_SESSION['user_id'])) {
                 </div>
                 <div class="flex-grow-1 ms-3">
                     <h5 class="alert-heading">Welcome back, <?php echo htmlspecialchars($_SESSION['name'] ?? 'Staff User'); ?>!</h5>
-                    <p class="mb-0">You have <strong>2 pending reports</strong> and <strong>1 report in progress</strong>.</p>
+                    <p class="mb-0">
+                        You have <strong><?php echo $pending; ?></strong> pending report(s)
+                        and <strong><?php echo $inProgress; ?></strong> report(s) in progress.
+                    </p>
+
+
                 </div>
             </div>
         </div>
@@ -77,7 +82,7 @@ if (!isset($_SESSION['user_id'])) {
                     <div class="card-body text-center">
                         <i class="fas fa-plus-circle fa-3x text-primary mb-3"></i>
                         <h5>Create New Report</h5>
-                        <p class="text-muted">Submit a new maintenance request with photos</p>
+                        <p class="text-muted">Submit a new maintenance request</p>
                         <a href="newReport.php" class="btn btn-primary w-100">Report Issue</a>
                     </div>
                 </div>
@@ -111,32 +116,43 @@ if (!isset($_SESSION['user_id'])) {
             </div>
             <div class="card-body">
                 <div class="list-group list-group-flush">
-                    <a href="report-detail.html?id=1005" class="list-group-item list-group-item-action">
-                        <div class="d-flex w-100 justify-content-between">
-                            <h6 class="mb-1">Leaking Pipe Report Updated</h6>
-                            <small class="text-muted">2 hours ago</small>
-                        </div>
-                        <p class="mb-1">Technician Hamzah: "Parts ordered, will repair tomorrow"</p>
-                        <small class="text-warning"><i class="fas fa-circle me-1"></i>In Progress</small>
-                    </a>
-                    <a href="report-detail.html?id=1004" class="list-group-item list-group-item-action">
-                        <div class="d-flex w-100 justify-content-between">
-                            <h6 class="mb-1">Broken AC Unit Assigned</h6>
-                            <small class="text-muted">5 hours ago</small>
-                        </div>
-                        <p class="mb-1">Your report has been assigned to HVAC team</p>
-                        <small class="text-primary"><i class="fas fa-circle me-1"></i>Pending</small>
-                    </a>
-                    <a href="report-detail.html?id=1001" class="list-group-item list-group-item-action">
-                        <div class="d-flex w-100 justify-content-between">
-                            <h6 class="mb-1">Elevator Issue Resolved</h6>
-                            <small class="text-muted">3 days ago</small>
-                        </div>
-                        <p class="mb-1">Your elevator report has been completed</p>
-                        <small class="text-success"><i class="fas fa-circle me-1"></i>Resolved</small>
-                    </a>
+                    <?php foreach ($recentActivities as $row): ?>
+                        <?php
+                        // Set status color
+                        $statusColor = match (strtolower($row['status'])) {
+                            'resolved' => 'text-success',
+                            'in progress' => 'text-warning',
+                            'open' => 'text-primary',
+                            default => 'text-secondary'
+                        };
+
+                        // Format time ago
+                        $updated = new DateTime($row['time']);
+                        $now = new DateTime();
+                        $interval = $now->diff($updated);
+
+                        if ($interval->d > 0) {
+                            $timeAgo = $interval->d . ' day' . ($interval->d > 1 ? 's' : '') . ' ago';
+                        } elseif ($interval->h > 0) {
+                            $timeAgo = $interval->h . ' hour' . ($interval->h > 1 ? 's' : '') . ' ago';
+                        } elseif ($interval->i > 0) {
+                            $timeAgo = $interval->i . ' minute' . ($interval->i > 1 ? 's' : '') . ' ago';
+                        } else {
+                            $timeAgo = 'Just now';
+                        }
+
+                        $technician = $row['technician'] ? " {$row['technician']}: " : '';
+                        ?>
+                        <a href="report-detail.php?id=<?= htmlspecialchars($row['report_id']) ?>" class="list-group-item list-group-item-action">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h6 class="mb-1"><b><?= htmlspecialchars("{$row['title']} Updated") ?></b></h6>
+                                <small class="text-muted"><?= $timeAgo ?></small>
+                            </div>
+                            <p class="mb-1"><?= htmlspecialchars( ($row['notes'] ?: 'No comment provided.')) ?></p>
+                            <small class="<?= $statusColor ?>"><i class="fas fa-circle me-1"></i><?= htmlspecialchars($row['status']) ?></small>
+                        </a>
+                    <?php endforeach; ?>
                 </div>
-                <!-- <a href="notifications.html" class="btn btn-outline-secondary w-100 mt-3">View All Notifications</a> -->
             </div>
         </div>
 

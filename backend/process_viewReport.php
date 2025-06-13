@@ -7,11 +7,40 @@ if (!$report_id) {
     die("Invalid report ID.");
 }
 
-// Insert 'open' status only if not already 'open'
+// Handle comment POST (from comment form)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['notes'], $_SESSION['user_id'], $_POST['report_id'])) {
+    $report_id = $_POST['report_id']; 
+    $user_id = $_SESSION['user_id'];
+    $notes = trim($_POST['notes']);
+
+    if (!empty($notes)) {
+        // Get current status
+        $stmt = $pdo->prepare("
+            SELECT status FROM StatusLog 
+            WHERE report_id = ? 
+            ORDER BY timestamp DESC 
+            LIMIT 1
+        ");
+        $stmt->execute([$report_id]);
+        $currentStatus = $stmt->fetchColumn() ?: 'open';
+
+        // Insert new statuslog with same status, just adding comment
+        $insert = $pdo->prepare("
+            INSERT INTO StatusLog (report_id, status, notes, changed_by, timestamp)
+            VALUES (?, ?, ?, ?, NOW())
+        ");
+        $insert->execute([$report_id, $currentStatus, $notes, $user_id]);
+    }
+
+    // Redirect to prevent resubmission
+    header("Location: viewReport.php?id=" . $report_id);
+    exit();
+}
+
+// Handle `?open=1` - insert 'open' status if not already
 if (isset($_GET['open']) && $_GET['open'] == 1 && isset($_SESSION['user_id'])) {
     $user_id = $_SESSION['user_id'];
 
-    // Check if latest status is not 'open'
     $checkStmt = $pdo->prepare("
         SELECT status FROM StatusLog 
         WHERE report_id = ? 
@@ -29,7 +58,7 @@ if (isset($_GET['open']) && $_GET['open'] == 1 && isset($_SESSION['user_id'])) {
         $insertStmt->execute([$report_id, $user_id]);
     }
 
-    // Redirect to clean URL (without &open=1)
+    // Redirect to clean URL
     header("Location: viewReport.php?id=" . $report_id);
     exit();
 }
