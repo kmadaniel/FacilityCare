@@ -143,7 +143,7 @@ if (!isset($_SESSION['user_id'])) {
 
                         $technician = $row['technician'] ? " {$row['technician']}: " : '';
                         ?>
-                        <a href="report-detail.php?id=<?= htmlspecialchars($row['report_id']) ?>" class="list-group-item list-group-item-action">
+                        <a href="reportDetails.php?id=<?= htmlspecialchars($row['report_id']) ?>" class="list-group-item list-group-item-action">
                             <div class="d-flex w-100 justify-content-between">
                                 <h6 class="mb-1"><b><?= htmlspecialchars("{$row['title']} Updated") ?></b></h6>
                                 <small class="text-muted"><?= $timeAgo ?></small>

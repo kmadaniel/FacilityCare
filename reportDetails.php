@@ -1,38 +1,5 @@
 <?php
-include 'connection.php';
-session_start();
-
-$user_id = $_SESSION['user_id'] ?? null;
-
-if (!$user_id) {
-  header("Location: login.php");
-  exit();
-}
-
-if (!isset($_GET['id'])) {
-  die("Report ID not specified.");
-}
-
-$report_id = $_GET['id'];
-
-// Fetch report info
-$stmt = $pdo->prepare("SELECT * FROM Report WHERE report_id = :id");
-$stmt->execute(['id' => $report_id]);
-$report = $stmt->fetch();
-
-if (!$report) {
-  die("Report not found.");
-}
-
-// Fetch status
-$statusStmt = $pdo->prepare("SELECT status FROM StatusLog WHERE report_id = :id ORDER BY timestamp DESC LIMIT 1");
-$statusStmt->execute(['id' => $report_id]);
-$status = $statusStmt->fetchColumn() ?? 'Pending';
-
-// Fetch media
-$mediaStmt = $pdo->prepare("SELECT file_path, media_type FROM Media WHERE report_id = :id");
-$mediaStmt->execute(['id' => $report_id]);
-$mediaFiles = $mediaStmt->fetchAll();
+include 'backend/process_reportDetails.php';
 ?>
 
 <!DOCTYPE html>
@@ -196,8 +163,10 @@ $mediaFiles = $mediaStmt->fetchAll();
             </div>
             <div class="detail-item">
               <h6><i class="fas fa-clock text-muted me-2"></i>Last Updated</h6>
-              <p class="mb-0">28 May 2025 - 10:00 AM</p> <!-- Hardcoded -->
+              <p class="mb-0"> <?= date('d M Y - g:i A', strtotime($latestUpdate)) ?></p> <!-- Hardcoded -->
             </div>
+
+
           </div>
         </div>
 
@@ -240,32 +209,33 @@ $mediaFiles = $mediaStmt->fetchAll();
         <h5 class="mb-0"><i class="fas fa-history text-primary me-2"></i>Log</h5>
       </div>
       <div class="card-body">
-        <div class="update-log">
-          <div class="d-flex justify-content-between">
-            <h6 class="text-primary">Technician Update</h6>
-            <small class="text-muted">28 May 2025 - 10:00 AM</small>
+        <?php foreach ($statusHistory as $log): ?>
+          <div class="update-log">
+            <div class="d-flex justify-content-between">
+              <h6 class="text-primary">
+                <?= match (strtolower($log['status'])) {
+                  'submitted' => 'Report Submitted',
+                  'resolved', 'in progress', 'open' => 'Status Changed',
+                  default => 'Technician Update'
+                } ?>
+              </h6>
+              <small class="text-muted">
+                <?= date('d M Y - g:i A', strtotime($log['timestamp'])) ?>
+              </small>
+            </div>
+            <p class="mb-2"><?= htmlspecialchars($log['notes'] ?: 'No additional notes') ?></p>
+            <p class="text-muted small mb-0">
+              <?php
+              $icon = match (strtolower($log['status'])) {
+                'submitted' => 'fas fa-user',
+                'resolved', 'in progress', 'open' => 'fas fa-user-cog',
+                default => 'fas fa-user-tie'
+              };
+              ?>
+              <i class="<?= $icon ?> me-1"></i><?= htmlspecialchars($log['changed_by'] ?? 'System') ?>
+            </p>
           </div>
-          <p class="mb-2">"Parts have been ordered. Will complete the repair tomorrow morning."</p>
-          <p class="text-muted small mb-0"><i class="fas fa-user-tie me-1"></i>Hamzah</p>
-        </div>
-
-        <div class="update-log">
-          <div class="d-flex justify-content-between">
-            <h6 class="text-primary">Status Changed</h6>
-            <small class="text-muted">27 May 2025 - 4:30 PM</small>
-          </div>
-          <p class="mb-2">Report assigned to plumbing team</p>
-          <p class="text-muted small mb-0"><i class="fas fa-user-cog me-1"></i>System</p>
-        </div>
-
-        <div class="update-log">
-          <div class="d-flex justify-content-between">
-            <h6 class="text-primary">Report Submitted</h6>
-            <small class="text-muted">27 May 2025 - 4:00 PM</small>
-          </div>
-          <p class="mb-2">Initial report created</p>
-          <p class="text-muted small mb-0"><i class="fas fa-user me-1"></i>Staff User</p>
-        </div>
+        <?php endforeach; ?>
       </div>
     </div>
   </div>
