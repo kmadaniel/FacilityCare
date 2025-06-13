@@ -23,7 +23,7 @@
                     <hr class="text-white-50">
                     <ul class="nav nav-pills flex-column mb-auto">
                         <li class="nav-item">
-                            <a class="nav-link active" href="dashboardTech.php">
+                            <a class="nav-link" href="dashboardTech.php">
                                 <i class="fas fa-tachometer-alt me-2"></i> Dashboard
                             </a>
                         </li>
