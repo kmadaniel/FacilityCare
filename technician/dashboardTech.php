@@ -45,7 +45,6 @@
                             <strong>Technician User</strong>
                         </a>
                         <ul class="dropdown-menu dropdown-menu-dark text-small shadow">
-                            <!-- <li><a class="dropdown-item" href="#"><i class="bi bi-person me-2"></i>Profile</a></li> -->
                             <li><hr class="dropdown-divider"></li>
                             <li><a class="dropdown-item" href="#"><i class="bi bi-box-arrow-left me-2"></i>Sign out</a></li>
                         </ul>
@@ -172,11 +171,6 @@
                     <div class="card-body">
                         <div class="row g-2">
                             <div class="col-md-4">
-                                <button class="btn btn-outline-primary w-100 py-3">
-                                    <i class="fas fa-clock me-2"></i> Start Shift
-                                </button>
-                            </div>
-                            <div class="col-md-4">
                                 <button class="btn btn-outline-success w-100 py-3">
                                     <i class="fas fa-check-circle me-2"></i> Complete Task
                                 </button>
@@ -194,11 +188,6 @@
                             <div class="col-md-4">
                                 <button class="btn btn-outline-secondary w-100 py-3">
                                     <i class="fas fa-camera me-2"></i> Add Photo
-                                </button>
-                            </div>
-                            <div class="col-md-4">
-                                <button class="btn btn-outline-danger w-100 py-3">
-                                    <i class="fas fa-stopwatch me-2"></i> End Shift
                                 </button>
                             </div>
                         </div>

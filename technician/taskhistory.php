@@ -33,7 +33,7 @@
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="taskhistory.php">
+                            <a class="nav-link active" href="taskhistory.php">
                                 <i class="fas fa-history me-2"></i> Work History
                             </a>
                         </li>
@@ -44,7 +44,6 @@
                             <strong>Technician User</strong>
                         </a>
                         <ul class="dropdown-menu dropdown-menu-dark text-small shadow">
-                            <!-- <li><a class="dropdown-item" href="#"><i class="bi bi-person me-2"></i>Profile</a></li> -->
                             <li><hr class="dropdown-divider"></li>
                             <li><a class="dropdown-item" href="#"><i class="bi bi-box-arrow-left me-2"></i>Sign out</a></li>
                         </ul>
@@ -82,7 +81,6 @@
                                     <option selected>All Statuses</option>
                                     <option>Completed</option>
                                     <option>Cancelled</option>
-                                    <option>Rejected</option>
                                 </select>
                             </div>
                             <div class="col-md-3">
@@ -93,17 +91,6 @@
                                     <option>Electrical</option>
                                     <option>HVAC</option>
                                     <option>Structural</option>
-                                </select>
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label">Rating</label>
-                                <select class="form-select">
-                                    <option selected>All Ratings</option>
-                                    <option>5 Stars</option>
-                                    <option>4 Stars</option>
-                                    <option>3 Stars</option>
-                                    <option>2 Stars</option>
-                                    <option>1 Star</option>
                                 </select>
                             </div>
                             <div class="col-12">
@@ -138,29 +125,16 @@
                                             <span class="badge time-badge me-2">
                                                 <i class="fas fa-clock me-1"></i> 2h 15m
                                             </span>
-                                            <div class="rating-star">
-                                                <i class="fas fa-star"></i>
-                                                <i class="fas fa-star"></i>
-                                                <i class="fas fa-star"></i>
-                                                <i class="fas fa-star"></i>
-                                                <i class="fas fa-star-half-alt"></i>
-                                                <span class="ms-1">(4.5)</span>
-                                            </div>
                                         </div>
                                     </div>
                                     <div class="text-end">
-                                        <small class="text-muted">Completed: Today, 3:45 PM</small><br>
-                                        <small class="text-muted">WO#: 1245</small>
+                                        <small class="text-muted">Completed: Today, 3:45 PM</small>
                                     </div>
                                 </div>
                                 <div class="d-flex mt-3">
                                     <div class="me-3">
                                         <small class="text-muted">Location:</small>
                                         <p class="mb-0">East Wing, Office 203</p>
-                                    </div>
-                                    <div class="me-3">
-                                        <small class="text-muted">Customer Feedback:</small>
-                                        <p class="mb-0">"Technician was very professional and fixed the issue quickly."</p>
                                     </div>
                                     <div class="ms-auto">
                                         <img src="https://via.placeholder.com/300x200?text=AC+Repair" class="media-preview" data-bs-toggle="modal" data-bs-target="#mediaModal">
@@ -182,8 +156,7 @@
                                         </div>
                                     </div>
                                     <div class="text-end">
-                                        <small class="text-muted">Completed: Yesterday, 11:30 AM</small><br>
-                                        <small class="text-muted">WO#: 1243</small>
+                                        <small class="text-muted">Completed: Yesterday, 11:30 AM</small>
                                     </div>
                                 </div>
                                 <div class="d-flex mt-3">
@@ -191,13 +164,8 @@
                                         <small class="text-muted">Location:</small>
                                         <p class="mb-0">Main Building, 2F Women's Restroom</p>
                                     </div>
-                                    <div class="me-3">
-                                        <small class="text-muted">Parts Used:</small>
-                                        <p class="mb-0">1/2" PVC joint, Teflon tape</p>
-                                    </div>
                                     <div class="ms-auto">
                                         <img src="https://via.placeholder.com/300x200?text=Pipe+Repair" class="media-preview" data-bs-toggle="modal" data-bs-target="#mediaModal">
-                                        <img src="https://via.placeholder.com/300x200?text=After+Repair" class="media-preview" data-bs-toggle="modal" data-bs-target="#mediaModal">
                                     </div>
                                 </div>
                             </a>
@@ -216,18 +184,13 @@
                                         </div>
                                     </div>
                                     <div class="text-end">
-                                        <small class="text-muted">Cancelled: 2 days ago</small><br>
-                                        <small class="text-muted">WO#: 1240</small>
+                                        <small class="text-muted">Cancelled: 2 days ago</small>
                                     </div>
                                 </div>
                                 <div class="d-flex mt-3">
                                     <div class="me-3">
                                         <small class="text-muted">Location:</small>
                                         <p class="mb-0">Conference Room B</p>
-                                    </div>
-                                    <div class="me-3">
-                                        <small class="text-muted">Reason:</small>
-                                        <p class="mb-0">Required specialized glass, referred to vendor</p>
                                     </div>
                                 </div>
                             </a>
@@ -243,29 +206,16 @@
                                             <span class="badge time-badge me-2">
                                                 <i class="fas fa-clock me-1"></i> 0h 45m
                                             </span>
-                                            <div class="rating-star">
-                                                <i class="fas fa-star"></i>
-                                                <i class="fas fa-star"></i>
-                                                <i class="fas fa-star"></i>
-                                                <i class="fas fa-star"></i>
-                                                <i class="fas fa-star"></i>
-                                                <span class="ms-1">(5.0)</span>
-                                            </div>
                                         </div>
                                     </div>
                                     <div class="text-end">
-                                        <small class="text-muted">Completed: 1 week ago</small><br>
-                                        <small class="text-muted">WO#: 1238</small>
+                                        <small class="text-muted">Completed: 1 week ago</small>
                                     </div>
                                 </div>
                                 <div class="d-flex mt-3">
                                     <div class="me-3">
                                         <small class="text-muted">Location:</small>
                                         <p class="mb-0">North Hallway, 1st Floor</p>
-                                    </div>
-                                    <div class="me-3">
-                                        <small class="text-muted">Customer Feedback:</small>
-                                        <p class="mb-0">"Excellent work, very efficient!"</p>
                                     </div>
                                     <div class="ms-auto">
                                         <img src="https://via.placeholder.com/300x200?text=New+Fixture" class="media-preview" data-bs-toggle="modal" data-bs-target="#mediaModal">
@@ -326,8 +276,6 @@
                 document.getElementById('modalMedia').src = imgSrc;
             });
         }
-        
-        // Filter functionality would be added here
     </script>
 </body>
 </html>
