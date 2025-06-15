@@ -9,6 +9,65 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="CSS/style.css">
+    <style>
+        .voice-btn {
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .voice-btn:hover {
+            color: #0d6efd !important;
+            transform: scale(1.1);
+        }
+        .voice-btn:active {
+            transform: scale(0.95);
+        }
+        .object-fit-cover {
+            object-fit: cover;
+        }
+        .listening {
+            animation: pulse 1.5s infinite;
+            color: #dc3545 !important;
+        }
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        .language-selector {
+            position: relative;
+            display: inline-block;
+        }
+        .language-dropdown {
+            display: none;
+            position: absolute;
+            background-color: white;
+            min-width: 120px;
+            box-shadow: 0px 8px 16px rgba(0,0,0,0.1);
+            z-index: 1;
+            border-radius: 4px;
+            padding: 5px 0;
+            right: 0;
+        }
+        .language-selector:hover .language-dropdown {
+            display: block;
+        }
+        .language-option {
+            padding: 5px 15px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+        }
+        .language-option:hover {
+            background-color: #f8f9fa;
+        }
+        .language-flag {
+            width: 20px;
+            margin-right: 8px;
+        }
+        .active-language {
+            font-weight: bold;
+        }
+    </style>
 </head>
 
 <body>
@@ -100,13 +159,45 @@
                             </div>
 
                             <div class="mb-3">
-                                <label for="description" class="form-label">Detailed Description*</label>
+                                <label for="description" class="form-label">Detailed Description* 
+                                    <span class="text-muted small">
+                                        <span class="language-selector">
+                                            <span id="currentLanguage" class="active-language">English (US)</span>
+                                            <i class="fas fa-microphone ms-1 voice-btn" id="voiceDescBtn" title="Voice Description"></i>
+                                            <div class="language-dropdown">
+                                                <div class="language-option active" onclick="changeLanguage('en-US', 'English (US)', this)">
+                                                    <img src="https://flagcdn.com/w20/us.png" class="language-flag"> English
+                                                </div>
+                                                <div class="language-option" onclick="changeLanguage('ms-MY', 'Malay', this)">
+                                                    <img src="https://flagcdn.com/w20/my.png" class="language-flag"> Malay
+                                                </div>
+                                            </div>
+                                        </span>
+                                    </span>
+                                </label>
                                 <textarea class="form-control" id="description" rows="4" name="description" placeholder="Describe the issue in detail..." required></textarea>
+                                <div id="voiceStatus" class="small text-muted mt-1"></div>
                             </div>
 
                             <div class="mb-4">
-                                <label class="form-label">Upload Evidence (Photos/Videos)</label>
+                                <label class="form-label">Upload Evidence (Photos/Videos) 
+                                    <span class="text-muted small">
+                                        <span class="language-selector">
+                                            <span id="currentEvidenceLanguage" class="active-language">English (US)</span>
+                                            <i class="fas fa-microphone ms-1 voice-btn" id="voiceEvidenceBtn" title="Voice Description"></i>
+                                            <div class="language-dropdown">
+                                                <div class="language-option active" onclick="changeEvidenceLanguage('en-US', 'English (US)', this)">
+                                                    <img src="https://flagcdn.com/w20/us.png" class="language-flag"> English
+                                                </div>
+                                                <div class="language-option" onclick="changeEvidenceLanguage('ms-MY', 'Malay', this)">
+                                                    <img src="https://flagcdn.com/w20/my.png" class="language-flag"> Malay
+                                                </div>
+                                            </div>
+                                        </span>
+                                    </span>
+                                </label>
                                 <div class="border rounded p-3 text-center">
+                                    <input type="text" id="fileCaption" class="form-control mb-3" placeholder="Voice description of your evidence..." name="file_description">
                                     <div id="previewArea" class="d-flex flex-wrap gap-2 mb-3"></div>
                                     <input type="file" id="fileUpload" name="media[]" class="d-none" accept="image/*,video/*" multiple>
                                     <button type="button" class="btn btn-outline-primary" onclick="document.getElementById('fileUpload').click()">
@@ -144,46 +235,254 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        document.getElementById('fileUpload').addEventListener('change', function(e) {
-            const previewArea = document.getElementById('previewArea');
-            previewArea.innerHTML = '';
+        // Language configuration
+        let currentLanguage = 'en-US';
+        let currentLanguageName = 'English (US)';
+        let currentEvidenceLanguage = 'en-US';
+        let currentEvidenceLanguageName = 'English (US)';
 
-            if (this.files) {
-                Array.from(this.files).forEach(file => {
-                    const reader = new FileReader();
+        function changeLanguage(langCode, langName, element) {
+            currentLanguage = langCode;
+            currentLanguageName = langName;
+            document.getElementById('currentLanguage').textContent = langName;
+            if (descVoice) {
+                descVoice.setLanguage(langCode);
+            }
+            // Update active state in dropdown
+            const dropdown = element.closest('.language-dropdown');
+            dropdown.querySelectorAll('.language-option').forEach(opt => {
+                opt.classList.remove('active');
+            });
+            element.classList.add('active');
+        }
 
-                    reader.onload = function(e) {
-                        const previewDiv = document.createElement('div');
-                        previewDiv.className = 'position-relative';
-                        previewDiv.style.width = '100px';
-                        previewDiv.style.height = '100px';
-                        previewDiv.style.cursor = 'pointer';
+        function changeEvidenceLanguage(langCode, langName, element) {
+            currentEvidenceLanguage = langCode;
+            currentEvidenceLanguageName = langName;
+            document.getElementById('currentEvidenceLanguage').textContent = langName;
+            if (evidenceVoice) {
+                evidenceVoice.setLanguage(langCode);
+            }
+            // Update active state in dropdown
+            const dropdown = element.closest('.language-dropdown');
+            dropdown.querySelectorAll('.language-option').forEach(opt => {
+                opt.classList.remove('active');
+            });
+            element.classList.add('active');
+        }
 
-                        if (file.type.startsWith('image/')) {
-                            previewDiv.innerHTML = `
-                                <img src="${e.target.result}" class="img-thumbnail h-100 w-100 object-fit-cover" onclick="previewMedia('image', '${e.target.result}')">
-                                <button class="btn btn-danger btn-sm position-absolute top-0 end-0 p-1" onclick="this.parentElement.remove()">
-                                    <i class="fas fa-times"></i>
-                                </button>
-                            `;
-                        } else if (file.type.startsWith('video/')) {
-                            previewDiv.innerHTML = `
-                                <video class="img-thumbnail h-100 w-100 object-fit-cover" muted onclick="previewMedia('video', '${e.target.result}')">
-                                    <source src="${e.target.result}" type="${file.type}">
-                                </video>
-                                <button class="btn btn-danger btn-sm position-absolute top-0 end-0 p-1" onclick="this.parentElement.remove()">
-                                    <i class="fas fa-times"></i>
-                                </button>
-                            `;
+        // Enhanced Voice Recognition System with English and Malay support
+        class VoiceRecognition {
+            constructor(targetId, buttonId, statusId, initialLang = 'en-US') {
+                this.targetElement = document.getElementById(targetId);
+                this.buttonElement = document.getElementById(buttonId);
+                this.statusElement = statusId ? document.getElementById(statusId) : null;
+                this.recognition = null;
+                this.isListening = false;
+                this.originalPlaceholder = this.targetElement.placeholder;
+                this.currentLang = initialLang;
+                
+                this.init();
+            }
+            
+            init() {
+                if (!('webkitSpeechRecognition' in window)) {
+                    this.disableVoiceFeature();
+                    return;
+                }
+                
+                this.recognition = new webkitSpeechRecognition();
+                this.recognition.continuous = false;
+                this.recognition.interimResults = false;
+                this.recognition.lang = this.currentLang;
+                
+                this.recognition.onstart = () => this.onListeningStart();
+                this.recognition.onresult = (event) => this.onResult(event);
+                this.recognition.onerror = (event) => this.onError(event);
+                this.recognition.onend = () => this.onListeningEnd();
+                
+                this.buttonElement.addEventListener('click', () => this.toggleListening());
+            }
+            
+            setLanguage(langCode) {
+                this.currentLang = langCode;
+                if (this.recognition) {
+                    this.recognition.lang = langCode;
+                }
+            }
+            
+            toggleListening() {
+                if (this.isListening) {
+                    this.stopListening();
+                } else {
+                    this.startListening();
+                }
+            }
+            
+            startListening() {
+                try {
+                    this.targetElement.focus();
+                    this.recognition.lang = this.currentLang;
+                    this.recognition.start();
+                    this.isListening = true;
+                } catch (error) {
+                    this.showStatus("Error: " + error.message, true);
+                    console.error("Recognition error:", error);
+                    this.isListening = false;
+                }
+            }
+            
+            stopListening() {
+                this.recognition.stop();
+                this.isListening = false;
+            }
+            
+            onListeningStart() {
+                this.buttonElement.classList.add('listening');
+                this.showStatus("Listening... Speak now (" + this.getLanguageName() + ")");
+                this.targetElement.placeholder = "Listening... Speak now";
+            }
+            
+            onResult(event) {
+                const transcript = event.results[0][0].transcript;
+                this.targetElement.value = transcript;
+                this.showStatus("Voice input complete (" + this.getLanguageName() + ")");
+            }
+            
+            onError(event) {
+                console.error('Voice recognition error:', event.error);
+                let errorMsg = "Error occurred";
+                
+                switch(event.error) {
+                    case 'no-speech':
+                        errorMsg = "No speech detected";
+                        break;
+                    case 'audio-capture':
+                        errorMsg = "No microphone found";
+                        break;
+                    case 'not-allowed':
+                        errorMsg = "Microphone access denied";
+                        break;
+                    default:
+                        errorMsg = "Error: " + event.error;
+                }
+                
+                this.showStatus(errorMsg + " (" + this.getLanguageName() + ")", true);
+            }
+            
+            getLanguageName() {
+                switch(this.currentLang) {
+                    case 'en-US': return 'English';
+                    case 'ms-MY': return 'Malay';
+                    default: return this.currentLang;
+                }
+            }
+            
+            onListeningEnd() {
+                this.buttonElement.classList.remove('listening');
+                this.targetElement.placeholder = this.originalPlaceholder;
+                this.isListening = false;
+                
+                if (!this.statusElement || !this.statusElement.textContent.includes("complete")) {
+                    this.showStatus("Ready for voice input (" + this.getLanguageName() + ")");
+                }
+            }
+            
+            showStatus(message, isError = false) {
+                if (this.statusElement) {
+                    this.statusElement.textContent = message;
+                    this.statusElement.style.color = isError ? '#dc3545' : '#6c757d';
+                    
+                    if (isError) {
+                        setTimeout(() => {
+                            this.statusElement.textContent = "Ready for voice input (" + this.getLanguageName() + ")";
+                            this.statusElement.style.color = '#6c757d';
+                        }, 3000);
+                    }
+                }
+            }
+            
+            disableVoiceFeature() {
+                this.buttonElement.style.display = 'none';
+            }
+        }
+
+        // Initialize voice recognition
+        let descVoice, evidenceVoice;
+        document.addEventListener('DOMContentLoaded', function() {
+            // Description field voice recognition
+            descVoice = new VoiceRecognition(
+                'description', 
+                'voiceDescBtn',
+                'voiceStatus',
+                currentLanguage
+            );
+            
+            // Evidence description voice recognition
+            evidenceVoice = new VoiceRecognition(
+                'fileCaption', 
+                'voiceEvidenceBtn',
+                null,
+                currentEvidenceLanguage
+            );
+            
+            // File upload preview functionality
+            document.getElementById('fileUpload').addEventListener('change', function(e) {
+                const previewArea = document.getElementById('previewArea');
+                previewArea.innerHTML = '';
+
+                if (this.files && this.files.length > 0) {
+                    if (this.files.length > 5) {
+                        alert('Maximum 5 files allowed');
+                        this.value = '';
+                        return;
+                    }
+
+                    Array.from(this.files).forEach(file => {
+                        if (file.size > 10 * 1024 * 1024) {
+                            alert(`File "${file.name}" exceeds 10MB limit`);
+                            this.value = '';
+                            previewArea.innerHTML = '';
+                            return;
                         }
 
-                        previewArea.appendChild(previewDiv);
-                    };
+                        const reader = new FileReader();
+                        reader.onload = function(e) {
+                            const previewDiv = document.createElement('div');
+                            previewDiv.className = 'position-relative';
+                            previewDiv.style.width = '100px';
+                            previewDiv.style.height = '100px';
+                            previewDiv.style.cursor = 'pointer';
 
-                    reader.readAsDataURL(file);
-                });
-            }
+                            if (file.type.startsWith('image/')) {
+                                previewDiv.innerHTML = `
+                                    <img src="${e.target.result}" class="img-thumbnail h-100 w-100 object-fit-cover" onclick="previewMedia('image', '${e.target.result}')">
+                                    <button class="btn btn-danger btn-sm position-absolute top-0 end-0 p-1" onclick="removeFilePreview(this)">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                `;
+                            } else if (file.type.startsWith('video/')) {
+                                previewDiv.innerHTML = `
+                                    <video class="img-thumbnail h-100 w-100 object-fit-cover" muted onclick="previewMedia('video', '${e.target.result}')">
+                                        <source src="${e.target.result}" type="${file.type}">
+                                    </video>
+                                    <button class="btn btn-danger btn-sm position-absolute top-0 end-0 p-1" onclick="removeFilePreview(this)">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                `;
+                            }
+
+                            previewArea.appendChild(previewDiv);
+                        };
+                        reader.readAsDataURL(file);
+                    });
+                }
+            });
         });
+
+        function removeFilePreview(button) {
+            button.parentElement.remove();
+        }
 
         function previewMedia(type, src) {
             const container = document.getElementById("mediaPreviewContent");
@@ -203,30 +502,6 @@
             const modal = new bootstrap.Modal(document.getElementById('mediaPreviewModal'));
             modal.show();
         }
-
-        document.getElementById('fileInput').addEventListener('change', function () {
-    const maxFiles = 5;
-    const maxFileSize = 10 * 1024 * 1024; // 10MB in bytes
-    const files = this.files;
-    const errorMsg = document.getElementById('fileError');
-
-    // Clear any previous error message
-    errorMsg.textContent = '';
-
-    if (files.length > maxFiles) {
-        errorMsg.textContent = `You can only upload up to ${maxFiles} files.`;
-        this.value = ''; // Reset file input
-        return;
-    }
-
-    for (let i = 0; i < files.length; i++) {
-        if (files[i].size > maxFileSize) {
-            errorMsg.textContent = `Each file must be 10MB or smaller. File "${files[i].name}" is too large.`;
-            this.value = ''; // Reset file input
-            return;
-        }
-    }
-});
     </script>
 
     <footer class="bg-light py-4 mt-5 border-top">
