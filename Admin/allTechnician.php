@@ -164,69 +164,69 @@ $technicians = $pdo->query("
                     </div>
                 </div>
 
-                  <!-- Add Technician Modal -->
-    <form action="../backend/add_technician.php" method="POST" enctype="multipart/form-data">
-        <div class="modal fade" id="addTechModal" tabindex="-1" aria-hidden="true">
-            <div class="modal-dialog modal-lg">
-                <div class="modal-content shadow border-0">
-                    <div class="modal-header bg-primary text-white">
-                        <h5 class="modal-title">Add New Technician</h5>
-                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                <!-- Add Technician Modal -->
+                <form action="../backend/add_technician.php" method="POST" enctype="multipart/form-data">
+                    <div class="modal fade" id="addTechModal" tabindex="-1" aria-hidden="true">
+                        <div class="modal-dialog modal-lg">
+                            <div class="modal-content shadow border-0">
+                                <div class="modal-header bg-primary text-white">
+                                    <h5 class="modal-title">Add New Technician</h5>
+                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+
+                                <div class="modal-body">
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">Full Name*</label>
+                                            <input type="text" class="form-control" name="name" required>
+                                        </div>
+                                    </div>
+
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">Email*</label>
+                                            <input type="email" class="form-control" name="email" required>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">Phone*</label>
+                                            <input type="tel" class="form-control" name="phone" required>
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label class="form-label">Specialties*</label>
+                                        <select class="form-select" name="specialties[]" multiple required>
+                                            <?php foreach ($specialties as $spec): ?>
+                                                <option value="<?= $spec['speciality_id'] ?>"><?= htmlspecialchars($spec['speciality_name']) ?></option>
+                                            <?php endforeach; ?>
+                                        </select>
+
+                                        <small class="text-muted">Hold Ctrl/Cmd to select multiple</small>
+                                    </div>
+
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">Status*</label>
+                                            <select class="form-select" name="technician_status" required>
+                                                <option value="active">Active</option>
+                                                <option value="inactive">Inactive</option>
+                                            </select>
+
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">Profile Photo</label>
+                                            <input type="file" class="form-control" name="profile_photo" accept="image/*">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                    <button type="submit" class="btn btn-primary">Add Technician</button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-
-                    <div class="modal-body">
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">Full Name*</label>
-                                <input type="text" class="form-control" name="name" required>
-                            </div>
-                        </div>
-
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">Email*</label>
-                                <input type="email" class="form-control" name="email" required>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">Phone*</label>
-                                <input type="tel" class="form-control" name="phone" required>
-                            </div>
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label">Specialties*</label>
-                            <select class="form-select" name="specialties[]" multiple required>
-                                <?php foreach ($specialties as $spec): ?>
-                                    <option value="<?= $spec['speciality_id'] ?>"><?= htmlspecialchars($spec['speciality_name']) ?></option>
-                                <?php endforeach; ?>
-                            </select>
-
-                            <small class="text-muted">Hold Ctrl/Cmd to select multiple</small>
-                        </div>
-
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">Status*</label>
-                                <select class="form-select" name="technician_status" required>
-                                    <option value="active">Active</option>
-                                    <option value="inactive">Inactive</option>
-                                </select>
-
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">Profile Photo</label>
-                                <input type="file" class="form-control" name="profile_photo" accept="image/*">
-                            </div>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="submit" class="btn btn-primary">Add Technician</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </form>
+                </form>
                 <!-- Filters Card -->
                 <div class="card filter-card mb-4">
                     <div class="card-body">
@@ -288,13 +288,13 @@ $technicians = $pdo->query("
                                         $jobPercent = $maxJobs > 0 ? ($assignedJobs / $maxJobs) * 100 : 0;
                                         $progressBarClass = $assignedJobs == 0 ? 'bg-secondary' : ($jobPercent < 50 ? 'bg-success' : 'bg-warning');
                                         $statusClass = strtolower($tech['technician_status']) === 'active' ? 'status-active' : 'status-inactive';
-                                        $photo = $tech['profile_photo'] ?? 'default-avatar.png'; // fallback if no photo
+                                        $photoPath = !empty($tech['profile_photo']) ? '../' . $tech['profile_photo'] : '../uploads/default-avatar.png';
                                     ?>
                                         <tr>
                                             <td>#<?= 1 + $index ?></td>
                                             <td>
                                                 <div class="d-flex align-items-center">
-                                                    <img src="<?= htmlspecialchars($photo) ?>" class="tech-avatar me-2" alt="Avatar" style="width:40px;height:40px;border-radius:50%;">
+                                                    <img src="<?= htmlspecialchars($photoPath) ?>" class="tech-avatar me-2" alt="Avatar" style="width:40px;height:40px;border-radius:50%;">
                                                     <div>
                                                         <h6 class="mb-0"><?= htmlspecialchars($tech['name']) ?></h6>
                                                         <small class="text-muted"><?= htmlspecialchars($tech['user_id']) ?></small>
@@ -372,7 +372,7 @@ $technicians = $pdo->query("
         </div>
     </div>
 
-  
+
 
     <!-- Export Modal -->
     <div class="modal fade" id="exportModal" tabindex="-1" aria-hidden="true">
