@@ -43,11 +43,6 @@
                                 <i class="bi bi-archive"></i> Archived
                             </a>
                         </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="allTechnician.php">
-                                <i class="bi bi-people"></i> Technicians
-                            </a>
-                        </li>
                     </ul>
                     <hr class="text-white-50">
                     <div class="dropdown">
@@ -136,12 +131,11 @@
                                     <p><?= nl2br(htmlspecialchars($report['description'])) ?></p>
                                 </div>
 
-                                <div class="mb-4">
-                                    <h6 class="mb-3"><i class="bi bi-images me-2"></i> Media Evidence</h6>
+                                <div class="mt-2">
+                                    <h6 class="mb-2"><i class="bi bi-images me-2"></i> Media Evidence</h6>
                                     <div class="media-gallery">
                                         <?php if (count($mediaFiles) > 0): ?>
-                                            <div class="mt-4">
-                                                <h6><i class="fas fa-image text-muted me-2"></i>Attached Media</h6>
+                                            <div class="mt-2">
                                                 <div class="d-flex flex-wrap gap-3">
                                                     <?php foreach ($mediaFiles as $file): ?>
                                                         <?php
@@ -242,7 +236,7 @@
                                     <h6 class="mb-3">Add Comment</h6>
                                     <form method="POST" action="">
                                         <input type="hidden" name="report_id" value="<?= htmlspecialchars($report_id) ?>">
-                                        <textarea class="form-control mb-2" name="notes" rows="3"placeholder="Add a comment or update..." required></textarea>
+                                        <textarea class="form-control mb-2" name="notes" rows="3" placeholder="Add a comment or update..." required></textarea>
                                         <button class="btn btn-primary w-100" type="submit">Post Comment</button>
                                     </form>
                                 </div>
@@ -284,33 +278,36 @@
     </div>
 
     <!-- Media Modal -->
-    <div class="modal fade" id="mediaModal" tabindex="-1" aria-hidden="true">
+    <div class="modal fade" id="mediaModal" tabindex="-1">
         <div class="modal-dialog modal-lg modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Media Viewer</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <h5 class="modal-title">Preview</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body text-center">
-                    <img id="modalMediaContent" src="" class="img-fluid" alt="Media content" style="max-height: 70vh;">
-                    <video id="modalVideoContent" controls class="img-fluid" style="max-height: 70vh; display: none;">
+                <div class="modal-body d-flex justify-content-center align-items-center" style="min-height: 300px;">
+                    <img id="modalMediaContent"
+                        style="max-width: 100%; max-height: 100%; object-fit: contain; display: none;" />
+
+                    <video id="modalVideoContent"
+                        controls muted
+                        style="max-width: 100%; max-height: 100%; object-fit: contain; display: none;">
+                        <source type="video/mp4">
                         Your browser does not support the video tag.
                     </video>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    <a id="downloadBtn" class="btn btn-primary" href="#" download>
-                        <i class="bi bi-download me-1"></i> Download
-                    </a>
+                    <a id="downloadBtn" href="#" class="btn btn-primary" download>Download</a>
                 </div>
             </div>
         </div>
     </div>
 
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // Media modal functionality
         const mediaModal = document.getElementById('mediaModal');
+
         if (mediaModal) {
             mediaModal.addEventListener('show.bs.modal', function(event) {
                 const button = event.relatedTarget;
@@ -320,44 +317,51 @@
                 const imgElement = document.getElementById('modalMediaContent');
                 const videoElement = document.getElementById('modalVideoContent');
 
+                imgElement.style.display = isVideo ? 'none' : 'block';
+                videoElement.style.display = isVideo ? 'block' : 'none';
+
                 if (isVideo) {
-                    imgElement.style.display = 'none';
-                    videoElement.style.display = 'block';
                     videoElement.src = mediaUrl;
+                    videoElement.load(); // make sure it's refreshed
                 } else {
-                    imgElement.style.display = 'block';
-                    videoElement.style.display = 'none';
                     imgElement.src = mediaUrl;
                 }
+
+                const downloadBtn = document.getElementById('downloadBtn');
+                downloadBtn.href = mediaUrl;
             });
 
             mediaModal.addEventListener('hidden.bs.modal', function() {
                 const videoElement = document.getElementById('modalVideoContent');
                 videoElement.pause();
+                videoElement.src = '';
             });
         }
 
         function previewMedia(type, src) {
-            const img = document.getElementById('modalMediaContent');
-            const video = document.getElementById('modalVideoContent');
-            const downloadBtn = document.getElementById('downloadBtn');
-
-            if (type === 'image') {
-                img.src = src;
-                img.style.display = 'block';
-                video.style.display = 'none';
-                video.pause();
-            } else if (type === 'video') {
-                video.src = src;
-                video.style.display = 'block';
-                img.style.display = 'none';
-            }
-            downloadBtn.href = src;
-            // Show modal
             const modal = new bootstrap.Modal(document.getElementById('mediaModal'));
             modal.show();
+
+            setTimeout(() => {
+                const img = document.getElementById('modalMediaContent');
+                const video = document.getElementById('modalVideoContent');
+                const downloadBtn = document.getElementById('downloadBtn');
+
+                img.style.display = type === 'image' ? 'block' : 'none';
+                video.style.display = type === 'video' ? 'block' : 'none';
+
+                if (type === 'image') {
+                    img.src = src;
+                } else {
+                    video.src = src;
+                    video.load();
+                }
+
+                downloadBtn.href = src;
+            }, 200);
         }
     </script>
+
 
 </body>
 
