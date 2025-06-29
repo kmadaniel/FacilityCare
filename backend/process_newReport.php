@@ -124,6 +124,54 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                         ':file_path'     => $filePath,
                         ':metadata_text' => $metadata
                     ]);
+                    
+                    $ext = pathinfo($filePath, PATHINFO_EXTENSION);
+
+                    if ($mediaType === 'video' && strtolower($ext) === 'mp4') {
+                        $escapedPath = escapeshellarg($filePath);
+                        $output = shell_exec("python ../ai_scripts/process_video.py $escapedPath 2>&1");
+                        file_put_contents('log.txt', $output); // Simpan output python ke log.txt
+                        
+                        // Tunggu file siap
+                        $transcriptPath = str_replace('.mp4', '_transcript.txt', $filePath);
+                        $summaryPath = str_replace('.mp4', '_summary.txt', $filePath);
+
+                        $wait = 0;
+                        while (!file_exists($transcriptPath) && $wait < 5) {
+                            sleep(1);
+                            $wait++;
+                        }
+
+                        $wait = 0;
+                        while (!file_exists($summaryPath) && $wait < 5) {
+                            sleep(1);
+                            $wait++;
+                        }
+
+                        // Baru baca kalau memang betul2 fail text
+                        if (file_exists($transcriptPath) && mime_content_type($transcriptPath) === 'text/plain') {
+                            $transcript = file_get_contents($transcriptPath);
+                        } else {
+                            $transcript = null;
+                        }
+
+                        if (file_exists($summaryPath) && mime_content_type($summaryPath) === 'text/plain') {
+                            $summary = file_get_contents($summaryPath);
+                        } else {
+                            $summary = null;
+                        }
+
+                        $updateStmt = $pdo->prepare("
+                            UPDATE Media 
+                            SET transcript = :transcript, summary = :summary 
+                            WHERE file_path = :file_path
+                        ");
+                        $updateStmt->execute([
+                            ':transcript' => $transcript,
+                            ':summary'    => $summary,
+                            ':file_path'  => $filePath
+                        ]);
+                    }
                 }
             }
         }
