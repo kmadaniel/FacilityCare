@@ -50,9 +50,10 @@ if (isset($_GET['open']) && $_GET['open'] == 1 && isset($_SESSION['user_id'])) {
     $checkStmt->execute([$report_id]);
     $latestStatus = $checkStmt->fetchColumn();
 
-    if ($latestStatus !== 'open') {
+   if (!$latestStatus) {
+        // Hanya insert "open" kalau report ini belum ada status langsung
         $insertStmt = $pdo->prepare("
-            INSERT INTO StatusLog (report_id, status, notes, changed_by, timestamp)
+            INSERT INTO statuslog (report_id, status, notes, changed_by, timestamp)
             VALUES (?, 'open', 'Report has been opened', ?, NOW())
         ");
         $insertStmt->execute([$report_id, $user_id]);
@@ -62,6 +63,7 @@ if (isset($_GET['open']) && $_GET['open'] == 1 && isset($_SESSION['user_id'])) {
     header("Location: viewReport.php?id=" . $report_id);
     exit();
 }
+
 
 // Fetch report info
 $stmt = $pdo->prepare("

@@ -10,7 +10,41 @@ if (!$reportId) {
 
 // Fetch report data
 $reportId = $_GET['id'];
-$stmt = $pdo->prepare("SELECT * FROM report WHERE report_id = ?");
+$stmt = $pdo->prepare("
+    SELECT 
+        r.*,
+        u.name AS reporter_name,
+        u.email AS reporter_email,
+        u.position AS department,
+        t.technician_id,
+        t.profile_photo,
+        t.phone_number,
+        -- Ambil nama technician dari user table kalau technician_id tak NULL
+        (SELECT name FROM user WHERE user.user_id = r.technician_id) AS technician_name,
+        -- Dapatkan latest status dan nota
+        (
+            SELECT status FROM statuslog s1
+            WHERE s1.report_id = r.report_id
+            ORDER BY s1.timestamp DESC
+            LIMIT 1
+        ) AS latest_status,
+        (
+            SELECT notes FROM statuslog s1
+            WHERE s1.report_id = r.report_id
+            ORDER BY s1.timestamp DESC
+            LIMIT 1
+        ) AS note,
+        (
+            SELECT timestamp FROM statuslog s1
+            WHERE s1.report_id = r.report_id
+            ORDER BY s1.timestamp DESC
+            LIMIT 1
+        ) AS timestamp
+    FROM report r
+    LEFT JOIN user u ON u.user_id = r.user_id
+    LEFT JOIN technician t ON t.technician_id = r.technician_id
+    WHERE r.report_id = ?
+");
 $stmt->execute([$reportId]);
 $report = $stmt->fetch();
 
@@ -25,11 +59,27 @@ $mediaStmt = $pdo->prepare("SELECT * FROM media WHERE report_id = ?");
 $mediaStmt->execute([$report['report_id']]);
 $mediaFiles = $mediaStmt->fetchAll();
 
+// Fetch report history log
+$logStmt = $pdo->prepare("
+    SELECT s.status, s.notes, s.timestamp, u.name AS changed_by_name, u.role
+    FROM statuslog s
+    LEFT JOIN user u ON s.changed_by = u.user_id
+    WHERE s.report_id = ?
+    ORDER BY s.timestamp DESC
+");
+$logStmt->execute([$reportId]);
+$statusLogs = $logStmt->fetchAll();
+
+// Normalize latest_status from earlier fetch
+if (!empty($report['latest_status'])) {
+    $report['latest_status'] = strtolower($report['latest_status']);
+} else {
+    $report['latest_status'] = 'open';
+}
 ?>
 
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -174,74 +224,62 @@ $mediaFiles = $mediaStmt->fetchAll();
                                     </div>
 
                                     <div class="mt-2">
-    <h6 class="mb-2"><i class="bi bi-images me-2"></i> Media Evidence</h6>
-    <div class="media-gallery">
-        <?php if (count($mediaFiles) > 0): ?>
-            <div class="mt-2">
-                <div class="d-flex flex-wrap gap-3">
-                    <?php foreach ($mediaFiles as $file): ?>
-                        <?php
-                        $relativePath = "../backend/" . htmlspecialchars($file['file_path']);
-                        $mediaType = strtolower($file['media_type']);
-                        ?>
-                        <div style="width: 140px; height: 140px; cursor: pointer; position: relative;">
-                            <?php if ($mediaType === 'image'): ?>
-                                <img src="<?= $relativePath ?>"
-                                     alt="Media Image"
-                                     class="img-thumbnail object-fit-cover w-100 h-100"
-                                     onclick="previewMedia('image', '<?= $relativePath ?>')">
-                            <?php elseif ($mediaType === 'video'): ?>
-                                <video muted
-                                       class="img-thumbnail object-fit-cover w-100 h-100"
-                                       onclick="previewMedia('video', '<?= $relativePath ?>')">
-                                    <source src="<?= $relativePath ?>" type="video/mp4">
-                                    Your browser does not support the video tag.
-                                </video>
-                            <?php endif; ?>
-                        </div>
-                    <?php endforeach; ?>
-                </div>
-            </div>
-        <?php else: ?>
-            <p class="text-muted">No media uploaded.</p>
-        <?php endif; ?>
-    </div>
-</div>
+                                        <h6 class="mb-2"><i class="bi bi-images me-2"></i> Media Evidence</h6>
+                                        <div class="media-gallery">
+                                            <?php if (count($mediaFiles) > 0): ?>
+                                                <div class="mt-2">
+                                                    <div class="d-flex flex-wrap gap-3">
+                                                        <?php foreach ($mediaFiles as $file): ?>
+                                                            <?php
+                                                            $relativePath = "../backend/" . htmlspecialchars($file['file_path']);
+                                                            $mediaType = strtolower($file['media_type']);
+                                                            ?>
+                                                            <div style="width: 140px; height: 140px; cursor: pointer; position: relative;">
+                                                                <?php if ($mediaType === 'image'): ?>
+                                                                    <img src="<?= $relativePath ?>"
+                                                                        alt="Media Image"
+                                                                        class="img-thumbnail object-fit-cover w-100 h-100"
+                                                                        onclick="previewMedia('image', '<?= $relativePath ?>')">
+                                                                <?php elseif ($mediaType === 'video'): ?>
+                                                                    <video muted
+                                                                        class="img-thumbnail object-fit-cover w-100 h-100"
+                                                                        onclick="previewMedia('video', '<?= $relativePath ?>')">
+                                                                        <source src="<?= $relativePath ?>" type="video/mp4">
+                                                                        Your browser does not support the video tag.
+                                                                    </video>
+                                                                <?php endif; ?>
+                                                            </div>
+                                                        <?php endforeach; ?>
+                                                    </div>
+                                                </div>
+                                            <?php else: ?>
+                                                <p class="text-muted">No media uploaded.</p>
+                                            <?php endif; ?>
+                                        </div>
+                                    </div>
 
                                     <!-- <button class="btn btn-primary">Save Changes</button> -->
                                 </form>
                             </div>
                         </div>
-                        
+
                         <!-- Update History -->
                         <div class="card admin-card">
                             <div class="card-body">
                                 <h5 class="card-title mb-4">Update History</h5>
 
-                                <div class="history-item">
-                                    <div class="d-flex justify-content-between mb-2">
-                                        <strong>Status changed to "In Progress"</strong>
-                                        <small class="text-muted">16 Jul 2025, 02:30 PM</small>
+                                <?php foreach ($statusLogs as $log): ?>
+                                    <div class="history-item">
+                                        <div class="d-flex justify-content-between mb-2">
+                                            <strong>Status changed to "<?= htmlspecialchars(ucwords(str_replace('_', ' ', $log['status']))) ?>"</strong>
+                                            <small class="text-muted"><?= date('d M Y, h:i A', strtotime($log['timestamp'])) ?></small>
+                                        </div>
+                                        <p class="mb-1">Updated by: <?= htmlspecialchars($log['changed_by_name']) ?> (<?= $log['role'] ?>)</p>
+                                        <?php if (!empty($log['notes'])): ?>
+                                            <p class="mb-0 text-muted">Admin note: <?= nl2br(htmlspecialchars($log['notes'])) ?></p>
+                                        <?php endif; ?>
                                     </div>
-                                    <p class="mb-1">Assigned to: Hamzah (Plumber)</p>
-                                    <p class="mb-0 text-muted">Admin note: Plumber has been assigned and will arrive tomorrow morning. Temporary bucket placed to catch drips.</p>
-                                </div>
-
-                                <div class="history-item">
-                                    <div class="d-flex justify-content-between mb-2">
-                                        <strong>Status changed to "Open"</strong>
-                                        <small class="text-muted">15 Jul 2025, 03:15 PM</small>
-                                    </div>
-                                    <p class="mb-0 text-muted">Admin note: Initial assessment: Needs professional plumber. Contacting vendor.</p>
-                                </div>
-
-                                <div class="history-item">
-                                    <div class="d-flex justify-content-between mb-2">
-                                        <strong>Report created</strong>
-                                        <small class="text-muted">15 Jul 2025, 10:45 AM</small>
-                                    </div>
-                                    <p class="mb-0 text-muted">Reported by: Roslan Zulkifli (Facilities)</p>
-                                </div>
+                                <?php endforeach; ?>
                             </div>
                         </div>
                     </div>
@@ -251,35 +289,43 @@ $mediaFiles = $mediaStmt->fetchAll();
                         <div class="card admin-card mb-4">
                             <div class="card-body">
                                 <h5 class="card-title mb-3">Report Status</h5>
+                                <form method="POST" action="../backend/process_update_status.php">
+                                    <input type="hidden" name="report_id" value="<?= $report['report_id'] ?>">
 
-                                <div class="mb-4">
-                                    <label class="form-label">Current Status</label>
-                                    <select class="form-select mb-3">
-                                        <option>Open</option>
-                                        <option selected>In Progress</option>
-                                        <option>Resolved</option>
-                                    </select>
-
-                                    <div class="mb-3">
-                                        <label class="form-label">Assigned To</label>
-                                        <select class="form-select">
-                                            <option selected>Hamzah (Plumber)</option>
-                                            <option>Plumbing Team</option>
-                                            <option>Electrical Team</option>
-                                            <option>HVAC Team</option>
-                                            <option>Other Technician</option>
+                                    <div class="mb-4">
+                                        <label class="form-label">Current Status</label>
+                                        <select class="form-select mb-3" name="status" required>
+                                            <option value="open" <?= ($report['latest_status'] === 'open') ? 'selected' : '' ?>>Open</option>
+                                            <option value="in_progress" <?= ($report['latest_status'] === 'in_progress') ? 'selected' : '' ?>>In Progress</option>
+                                            <option value="resolved" <?= ($report['latest_status'] === 'resolved') ? 'selected' : '' ?>>Resolved</option>
                                         </select>
-                                    </div>
 
-                                    <div class="mb-3">
-                                        <label for="statusNote" class="form-label">Add Note</label>
-                                        <textarea class="form-control" id="statusNote" rows="3" placeholder="Add a note about this status change..."></textarea>
-                                    </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">Assigned To</label>
+                                            <select class="form-select" name="technician_id" required>
+                                                <option value="">-- Select Technician --</option>
+                                                <?php
+                                                $techStmt = $pdo->query("SELECT u.user_id, u.name, u.role FROM user u WHERE u.position = 'technician'");
+                                                while ($tech = $techStmt->fetch()):
+                                                ?>
+                                                    <option value="<?= $tech['user_id'] ?>" <?= ($report['technician_id'] === $tech['user_id']) ? 'selected' : '' ?>>
+                                                        <?= htmlspecialchars($tech['name']) ?> (<?= $tech['role'] ?>)
+                                                    </option>
+                                                <?php endwhile; ?>
+                                            </select>
+                                        </div>
 
-                                    <button class="btn btn-primary w-100">
-                                        <i class="bi bi-save me-1"></i> Update Status
-                                    </button>
-                                </div>
+                                        <div class="mb-3">
+                                            <label for="statusNote" class="form-label">Latest Note</label>
+                                            <textarea class="form-control" name="notes" id="statusNote" rows="3"><?= $report['note'] ?? '' ?></textarea>
+                                        </div>
+
+                                        <button type="submit" class="btn btn-primary w-100">
+                                            <i class="bi bi-save me-1"></i> Update Status
+                                        </button>
+                                    </div>
+                                </form>
+
 
                                 <hr>
 
@@ -302,34 +348,35 @@ $mediaFiles = $mediaStmt->fetchAll();
                                     <ul class="list-group list-group-flush">
                                         <li class="list-group-item px-0 d-flex justify-content-between">
                                             <span>Reported By:</span>
-                                            <span>Roslan Zulkifli</span>
+                                            <span><?= $report['reporter_name'] ?></span>
                                         </li>
                                         <li class="list-group-item px-0 d-flex justify-content-between">
                                             <span>Department:</span>
-                                            <span>Facilities</span>
+                                            <span><?= $report['department'] ?? 'N/A' ?></span>
                                         </li>
                                         <li class="list-group-item px-0 d-flex justify-content-between">
                                             <span>Contact:</span>
-                                            <span>RoslanZulkifli@company.com</span>
+                                            <span><?= $report['reporter_email'] ?></span>
                                         </li>
                                         <li class="list-group-item px-0 d-flex justify-content-between">
                                             <span>Created:</span>
-                                            <span>15 Jul 2025, 10:45 AM</span>
+                                            <span><?= date('d M Y, h:i A', strtotime($report['created_at'])) ?></span>
                                         </li>
                                         <li class="list-group-item px-0 d-flex justify-content-between">
                                             <span>Last Updated:</span>
-                                            <span>16 Jul 2025, 02:30 PM</span>
+                                            <span><?= date('d M Y, h:i A', strtotime($report['timestamp'] ?? $report['created_at'])) ?></span>
                                         </li>
                                     </ul>
                                 </div>
                             </div>
                         </div>
                     </div>
+
                 </div>
             </main>
         </div>
     </div>
-    
+
     <!-- Media Modal -->
     <div class="modal fade" id="mediaModal" tabindex="-1">
         <div class="modal-dialog modal-lg modal-dialog-centered">
@@ -443,6 +490,7 @@ $mediaFiles = $mediaStmt->fetchAll();
             }, 200);
         }
     </script>
-    
+
 </body>
+
 </html>
