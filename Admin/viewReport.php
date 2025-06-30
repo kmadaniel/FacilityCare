@@ -176,7 +176,7 @@
                                 <?php foreach ($statusHistory as $log): ?>
                                     <div class="history-item mb-3">
                                         <div class="d-flex justify-content-between mb-2">
-                                            <strong>Status changed to "<?= ucfirst($log['status']) ?>"</strong>
+                                            <strong>Status changed to "<?= htmlspecialchars(ucwords(str_replace('_', ' ', $log['status']))) ?>"</strong>
                                             <small class="text-muted"><?= date("d M Y, h:i A", strtotime($log['timestamp'])) ?></small>
                                         </div>
                                         <?php if ($log['notes']): ?>
@@ -203,16 +203,22 @@
                                         <i class="bi bi-hourglass-split me-2" style="font-size: 1.5rem;"></i>
                                         <div>
                                             <h6 class="alert-heading mb-1">
-                                                <span <?= match (strtolower($currentStatus['status'] ?? 'pending')) {
-                                                            'inprogress' => 'status-progress',
-                                                            'resolved' => 'status-resolved',
-                                                            'open' => 'status-open',
-                                                            default => 'status-open'
-                                                        } ?>">
-                                                    <?= ucfirst($currentStatus['status'] ?? 'Pending') ?>
+                                                <span class="
+                                                    <?php
+                                                    $statusClass = match (strtolower($currentStatus['status'] ?? 'pending')) {
+                                                        'in progress' => 'status-progress',
+                                                        'resolved'    => 'status-resolved',
+                                                        'open'        => 'status-open',
+                                                        default       => 'status-open'
+                                                    };
+                                                    echo $statusClass;
+                                                    ?>">
+                                                    <?= ucwords(str_replace('_', ' ', $currentStatus['status'] ?? 'Pending')) ?>
                                                 </span>
                                             </h6>
-                                            <p class="mb-0">Assigned to: Hamzah (Plumber)</p>
+                                            <p class="mb-0">
+                                                Assigned to: <?= !empty($technicianName) ? htmlspecialchars($technicianName) : 'Not assigned yet' ?>
+                                            </p>
                                         </div>
                                     </div>
                                 </div>
@@ -232,7 +238,7 @@
                                 <hr>
 
                                 <!-- comment_form.php -->
-                                <div class="mb-4">
+                                <!-- <div class="mb-4">
                                     <h6 class="mb-3">Add Comment</h6>
                                     <form method="POST" action="">
                                         <input type="hidden" name="report_id" value="<?= htmlspecialchars($report_id) ?>">
@@ -240,32 +246,29 @@
                                         <button class="btn btn-primary w-100" type="submit">Post Comment</button>
                                     </form>
                                 </div>
-
-
-                                <hr>
-
+                                <hr> -->
                                 <div>
                                     <h6 class="mb-3">Report Information</h6>
                                     <ul class="list-group list-group-flush">
                                         <li class="list-group-item px-0 d-flex justify-content-between">
-                                            <span>Priority:</span>
-                                            <span class="badge urgency-<?= strtolower($report['priority']) ?> me-2"><?= ucfirst($report['priority']) ?></span>
+                                            <span>Reported By:</span>
+                                            <span><?= $report['reporter_name'] ?></span>
                                         </li>
                                         <li class="list-group-item px-0 d-flex justify-content-between">
-                                            <span>Assigned To:</span>
-                                            <span>Hamzah (Plumber)</span>
+                                            <span>Role:</span>
+                                            <span><?= $report['position'] ?? 'N/A' ?></span>
                                         </li>
                                         <li class="list-group-item px-0 d-flex justify-content-between">
-                                            <span>Contact Email:</span>
-                                            <span>RoslanZulkifli@company.com</span>
+                                            <span>Contact:</span>
+                                            <span><?= $report['reporter_email'] ?></span>
                                         </li>
                                         <li class="list-group-item px-0 d-flex justify-content-between">
                                             <span>Created:</span>
-                                            <span><?= date("d M Y, h:i A", strtotime($report['created_at'])) ?></span>
+                                            <span><?= date('d M Y, h:i A', strtotime($report['created_at'])) ?></span>
                                         </li>
                                         <li class="list-group-item px-0 d-flex justify-content-between">
                                             <span>Last Updated:</span>
-                                            <span><?= isset($currentStatus['timestamp']) ? date("d M Y, h:i A", strtotime($currentStatus['timestamp'])) : '-' ?></span>
+                                            <span><?= date('d M Y, h:i A', strtotime($report['timestamp'] ?? $report['created_at'])) ?></span>
                                         </li>
                                     </ul>
                                 </div>

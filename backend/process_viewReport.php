@@ -67,7 +67,7 @@ if (isset($_GET['open']) && $_GET['open'] == 1 && isset($_SESSION['user_id'])) {
 
 // Fetch report info
 $stmt = $pdo->prepare("
-    SELECT r.*, u.name AS reporter_name, u.email AS reporter_email
+    SELECT r.*, u.name AS reporter_name, u.email AS reporter_email, u.position
     FROM Report r
     JOIN User u ON r.user_id = u.user_id
     WHERE r.report_id = ?
@@ -105,4 +105,24 @@ $historyStmt = $pdo->prepare("
 ");
 $historyStmt->execute([$report_id]);
 $statusHistory = $historyStmt->fetchAll();
+
+// Dapatkan status terkini
+$statusStmt = $pdo->prepare("
+    SELECT status, timestamp 
+    FROM statuslog 
+    WHERE report_id = ? 
+    ORDER BY timestamp DESC 
+    LIMIT 1
+");
+$statusStmt->execute([$report['report_id']]);
+$currentStatus = $statusStmt->fetch();
+
+// Dapatkan nama technician (assigned_to)
+$techStmt = $pdo->prepare("
+    SELECT name
+    FROM user 
+    WHERE user_id = ?
+");
+$techStmt->execute([$report['technician_id'] ?? '']);
+$technicianName = $techStmt->fetchColumn() ?? 'Not Assigned';
 ?>

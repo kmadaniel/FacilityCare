@@ -351,7 +351,7 @@ if (!empty($report['latest_status'])) {
                                             <span><?= $report['reporter_name'] ?></span>
                                         </li>
                                         <li class="list-group-item px-0 d-flex justify-content-between">
-                                            <span>Department:</span>
+                                            <span>Role:</span>
                                             <span><?= $report['department'] ?? 'N/A' ?></span>
                                         </li>
                                         <li class="list-group-item px-0 d-flex justify-content-between">
