@@ -139,7 +139,7 @@
                                                 <div class="d-flex flex-wrap gap-3">
                                                     <?php foreach ($mediaFiles as $file): ?>
                                                         <?php
-                                                        $relativePath = "/MultimediaDB/backend/" . htmlspecialchars($file['file_path']);
+                                                        $relativePath = "../backend/" . htmlspecialchars($file['file_path']);
                                                         $mediaType = strtolower($file['media_type']);
                                                         ?>
                                                         <div style="width: 140px; height: 140px; cursor: pointer; position: relative;">
