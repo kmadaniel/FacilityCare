@@ -1,3 +1,14 @@
+<?php
+session_name("staff_session");
+session_start();
+require_once '../connection.php';
+
+if (!isset($_SESSION['user_id'])) {
+    header("Location: homepage.php");
+    exit();
+} 
+?>
+
 <!-- profile.html -->
 <!DOCTYPE html>
 <html lang="en">

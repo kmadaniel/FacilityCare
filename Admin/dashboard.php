@@ -1,6 +1,13 @@
 <?php
+session_name("admin_session");
 session_start();
 require_once '../connection.php';
+
+// Check if admin is logged in
+if (!isset($_SESSION['user_id'])) {
+    header("Location: ../login.php");
+    exit();
+}
 
 // Count total reports
 $totalReportsStmt = $pdo->query("SELECT COUNT(*) FROM Report");

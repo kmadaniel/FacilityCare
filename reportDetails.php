@@ -1,5 +1,11 @@
 <?php
 include 'backend/process_reportDetails.php';
+
+if (!isset($_SESSION['user_id'])) {
+    header("Location: homepage.php");
+    exit();
+} 
+
 ?>
 
 <!DOCTYPE html>

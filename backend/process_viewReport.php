@@ -1,4 +1,5 @@
 <?php
+session_name("admin_session");
 session_start();
 require_once '../connection.php';
 
@@ -80,9 +81,12 @@ if (!$report) {
 }
 
 // Fetch media files
-$mediaStmt = $pdo->prepare("SELECT file_path, media_type FROM Media WHERE report_id = :id");
+$mediaStmt = $pdo->prepare("SELECT file_path, media_type, uploaded_by_role FROM Media WHERE report_id = :id");
 $mediaStmt->execute(['id' => $report_id]);
 $mediaFiles = $mediaStmt->fetchAll();
+
+$staffMedia = array_filter($mediaFiles, fn($m) => $m['uploaded_by_role'] === 'staff');
+$technicianMedia = array_filter($mediaFiles, fn($m) => $m['uploaded_by_role'] === 'technician');
 
 // Fetch current status
 $statusStmt = $pdo->prepare("
@@ -115,7 +119,9 @@ $statusStmt = $pdo->prepare("
     LIMIT 1
 ");
 $statusStmt->execute([$report['report_id']]);
-$currentStatus = $statusStmt->fetch();
+$latestStatusRow = $statusStmt->fetch();
+
+$lastUpdated = $latestStatusRow['timestamp'] ?? $report['created_at'];
 
 // Dapatkan nama technician (assigned_to)
 $techStmt = $pdo->prepare("
@@ -125,4 +131,5 @@ $techStmt = $pdo->prepare("
 ");
 $techStmt->execute([$report['technician_id'] ?? '']);
 $technicianName = $techStmt->fetchColumn() ?? 'Not Assigned';
+
 ?>

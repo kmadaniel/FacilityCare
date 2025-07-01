@@ -1,6 +1,13 @@
 <?php
-require_once '../connection.php';
+session_name("technician_session");
 session_start();
+require_once '../connection.php';
+
+if (!isset($_SESSION['user_id']) || !isset($_SESSION['technician_id'])) {
+    header("Location: ../login.php");
+    exit();
+}
+$technicianId = $_SESSION['technician_id'];
 
 if (!isset($_GET['report_id'])) {
     echo "No report ID provided.";
@@ -39,9 +46,11 @@ $stmt->execute([$reportId]);
 $statusLog = $stmt->fetch();
 
 // Dapatkan gambar/media
-$stmt = $pdo->prepare("SELECT file_path FROM media WHERE report_id = ?");
+$stmt = $pdo->prepare("SELECT file_path, uploaded_by_role FROM media WHERE report_id = ?");
 $stmt->execute([$reportId]);
 $mediaFiles = $stmt->fetchAll();
+$staffMedia = array_filter($mediaFiles, fn($m) => $m['uploaded_by_role'] === 'staff');
+$technicianMedia = array_filter($mediaFiles, fn($m) => $m['uploaded_by_role'] === 'technician');
 
 // Dapatkan admin notes (optional: guna `notes` dari statuslog yang paling latest ada isi)
 $stmt = $pdo->prepare("
@@ -55,14 +64,37 @@ $adminNote = $stmt->fetch();
 
 // Dapatkan semua statuslog (history)
 $stmt = $pdo->prepare("
-    SELECT status, notes, changed_by, timestamp 
-    FROM statuslog 
-    WHERE report_id = ? 
-    ORDER BY timestamp ASC
+    SELECT sl.status, sl.notes, sl.timestamp, u.name AS changed_by, u.position AS changer_role
+    FROM StatusLog sl
+    JOIN User u ON u.user_id = sl.changed_by
+    WHERE sl.report_id = ?
+    ORDER BY sl.timestamp DESC
 ");
 $stmt->execute([$reportId]);
 $statusHistory = $stmt->fetchAll();
 
+$stmt = $pdo->prepare("
+    SELECT
+        MIN(CASE WHEN status = 'open' THEN timestamp END) AS open_time,
+        MAX(CASE WHEN status = 'resolved' THEN timestamp END) AS resolved_time
+    FROM statuslog
+    WHERE report_id = ?
+");
+$stmt->execute([$reportId]);
+$times = $stmt->fetch(PDO::FETCH_ASSOC);
+
+$openTime = $times['open_time'];
+$resolvedTime = $times['resolved_time'];
+
+$start = strtotime($openTime);
+$end = $resolvedTime ? strtotime($resolvedTime) : time(); // Kalau belum selesai, guna waktu sekarang
+
+$seconds = $end - $start;
+$hours = floor($seconds / 3600);
+$minutes = floor(($seconds % 3600) / 60);
+$timeSpent = ($hours ? "{$hours}h " : '') . "{$minutes}m";
+
+$priority = strtolower($report['priority']); // contoh: high, medium, low
 ?>
 
 <!DOCTYPE html>
@@ -172,34 +204,61 @@ $statusHistory = $stmt->fetchAll();
                                 </div>
 
                                 <div class="mb-4">
-                                    <h6 class="mb-3"><i class="fas fa-images me-2"></i> Evidence Photos</h6>
-                                    <div class="d-flex flex-wrap">
-                                        <?php foreach ($mediaFiles as $media): ?>
-                                            <?php
-                                            $relativePath = "../backend/" . htmlspecialchars($media['file_path']);
-                                            $extension = pathinfo($media['file_path'], PATHINFO_EXTENSION);
-                                            $mediaType = in_array(strtolower($extension), ['jpg', 'jpeg', 'png', 'gif']) ? 'image' : 'video';
-                                            ?>
-                                            <div style="width: 140px; height: 140px; cursor: pointer; position: relative;">
-                                                <?php if ($mediaType === 'image'): ?>
-                                                    <img src="<?= $relativePath ?>"
-                                                        alt="Media Image"
-                                                        class="img-thumbnail object-fit-cover w-100 h-100"
-                                                        onclick="previewMedia('image', '<?= $relativePath ?>')">
-                                                <?php elseif ($mediaType === 'video'): ?>
-                                                    <video muted
-                                                        class="img-thumbnail object-fit-cover w-100 h-100"
-                                                        onclick="previewMedia('video', '<?= $relativePath ?>')">
-                                                        <source src="<?= $relativePath ?>" type="video/mp4">
-                                                        Your browser does not support the video tag.
-                                                    </video>
-                                                <?php endif; ?>
-                                            </div>
-                                        <?php endforeach; ?>
-                                        <?php if (empty($mediaFiles)): ?>
-                                            <p class="text-muted">No evidence photos uploaded.</p>
-                                        <?php endif; ?>
-                                    </div>
+                                    <h6 class="mb-3"><i class="fas fa-images me-2"></i> Media Evidence</h6>
+
+                                    <!-- MEDIA BY STAFF -->
+                                    <h6 class="mb-2">Media Uploaded by Staff</h6>
+                                    <?php if (empty($staffMedia)): ?>
+                                        <p class="text-muted">No media uploaded by staff.</p>
+                                    <?php else: ?>
+                                        <div class="d-flex flex-wrap gap-2 mb-4">
+                                            <?php foreach ($staffMedia as $media): ?>
+                                                <?php
+                                                $relativePath = htmlspecialchars("../backend/" . $media['file_path']);
+                                                $ext = pathinfo($media['file_path'], PATHINFO_EXTENSION);
+                                                $mediaType = in_array(strtolower($ext), ['jpg', 'jpeg', 'png', 'gif']) ? 'image' : 'video';
+                                                ?>
+                                                <div style="width: 140px; height: 140px; cursor: pointer; position: relative;">
+                                                    <?php if ($mediaType === 'image'): ?>
+                                                        <img src="<?= $relativePath ?>" class="img-thumbnail object-fit-cover w-100 h-100"
+                                                            onclick="previewMedia('image', '<?= $relativePath ?>')">
+                                                    <?php else: ?>
+                                                        <video muted class="img-thumbnail object-fit-cover w-100 h-100"
+                                                            onclick="previewMedia('video', '<?= $relativePath ?>')">
+                                                            <source src="<?= $relativePath ?>" type="video/mp4">
+                                                        </video>
+                                                    <?php endif; ?>
+                                                </div>
+                                            <?php endforeach; ?>
+                                        </div>
+                                    <?php endif; ?>
+
+                                    <!-- MEDIA BY TECHNICIAN -->
+                                    <h6 class="mb-2">Media Uploaded by Technician</h6>
+                                    <?php if (empty($technicianMedia)): ?>
+                                        <p class="text-muted">No media uploaded by technician.</p>
+                                    <?php else: ?>
+                                        <div class="d-flex flex-wrap gap-2">
+                                            <?php foreach ($technicianMedia as $media): ?>
+                                                <?php
+                                                $relativePath = "../backend/" . htmlspecialchars($media['file_path']);
+                                                $ext = pathinfo($media['file_path'], PATHINFO_EXTENSION);
+                                                $mediaType = in_array(strtolower($ext), ['jpg', 'jpeg', 'png', 'gif']) ? 'image' : 'video';
+                                                ?>
+                                                <div style="width: 140px; height: 140px; cursor: pointer; position: relative;">
+                                                    <?php if ($mediaType === 'image'): ?>
+                                                        <img src="<?= $relativePath ?>" class="img-thumbnail object-fit-cover w-100 h-100"
+                                                            onclick="previewMedia('image', '<?= $relativePath ?>')">
+                                                    <?php else: ?>
+                                                        <video muted class="img-thumbnail object-fit-cover w-100 h-100"
+                                                            onclick="previewMedia('video', '<?= $relativePath ?>')">
+                                                            <source src="<?= $relativePath ?>" type="video/mp4">
+                                                        </video>
+                                                    <?php endif; ?>
+                                                </div>
+                                            <?php endforeach; ?>
+                                        </div>
+                                    <?php endif; ?>
                                 </div>
 
                                 <?php if ($adminNote): ?>
@@ -245,8 +304,9 @@ $statusHistory = $stmt->fetchAll();
                                                     <small class="text-muted"><?= date('F j, Y, g:i A', strtotime($log['timestamp'])) ?></small>
                                                 </div>
                                                 <?php if (!empty($log['notes'])): ?>
-                                                    <p class="mb-0 text-muted">Admin note: <?= htmlspecialchars($log['notes']) ?></p>
+                                                    <p class="mb-0 text-muted"><?= htmlspecialchars($log['notes']) ?></p>
                                                 <?php endif; ?>
+                                                 <small class="text-muted">Updated by: <?= htmlspecialchars($log['changed_by']) ?></small>
                                             </div>
                                         <?php endforeach; ?>
                                     <?php endif; ?>
@@ -285,7 +345,7 @@ $statusHistory = $stmt->fetchAll();
                                         <textarea class="form-control mb-3" name="notes" rows="3" placeholder="Describe your progress or any issues..."></textarea>
 
                                         <label class="form-label">Add Photos</label>
-                                        <input type="file" class="form-control mb-3" name="photo[]" multiple accept="image/*">
+                                        <input type="file" class="form-control mb-3" name="media[]" multiple accept="image/*">
 
                                         <div class="d-grid gap-2">
                                             <button type="submit" name="action" value="save" class="btn btn-primary action-btn">
@@ -308,19 +368,17 @@ $statusHistory = $stmt->fetchAll();
                                     <ul class="list-group list-group-flush">
                                         <li class="list-group-item px-0 d-flex justify-content-between">
                                             <span>Priority:</span>
-                                            <span class="text-danger">High</span>
-                                        </li>
-                                        <li class="list-group-item px-0 d-flex justify-content-between">
-                                            <span>Due Date:</span>
-                                            <span>Today, EOD</span>
+                                            <span class="text-<?= $priority === 'high' ? 'danger' : ($priority === 'medium' ? 'warning' : 'success') ?>">
+                                                <?= ucfirst($priority) ?>
+                                            </span>
                                         </li>
                                         <li class="list-group-item px-0 d-flex justify-content-between">
                                             <span>Time Spent:</span>
-                                            <span>45 minutes</span>
+                                            <span><?= $timeSpent ?></span>
                                         </li>
                                         <li class="list-group-item px-0 d-flex justify-content-between">
                                             <span>Created:</span>
-                                            <span>15 Jul 2023, 10:45 AM</span>
+                                            <span><?= date('j M Y, g:i A', strtotime($openTime)) ?></span>
                                         </li>
                                     </ul>
                                 </div>

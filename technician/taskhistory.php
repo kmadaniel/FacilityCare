@@ -1,10 +1,34 @@
 <?php
+session_name("technician_session");
 session_start();
 require_once '../connection.php';
+
+if (!isset($_SESSION['user_id']) || !isset($_SESSION['technician_id'])) {
+    header("Location: ../login.php");
+    exit();
+}
+$technicianId = $_SESSION['technician_id'];
+
+$stmt = $pdo->prepare("
+    SELECT r.*, s.status, s.timestamp 
+    FROM report r
+    JOIN (
+        SELECT report_id, MAX(timestamp) AS latest_time
+        FROM statuslog
+        GROUP BY report_id
+    ) latest ON r.report_id = latest.report_id
+    JOIN statuslog s ON s.report_id = latest.report_id AND s.timestamp = latest.latest_time
+    WHERE s.status = 'resolved' AND r.technician_id = ?
+    ORDER BY s.timestamp DESC
+");
+$stmt->execute([$technicianId]);
+$resolvedTasks = $stmt->fetchAll();
+
 ?>
 
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -13,6 +37,7 @@ require_once '../connection.php';
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="../CSS/styleT.css">
 </head>
+
 <body>
     <div class="container-fluid">
         <div class="row">
@@ -122,116 +147,36 @@ require_once '../connection.php';
                     </div>
                     <div class="card-body">
                         <div class="list-group list-group-flush">
-                            <!-- Completed Work Order with Rating -->
-                            <a href="#" class="list-group-item list-group-item-action history-card mb-3">
-                                <div class="d-flex w-100 justify-content-between">
-                                    <div>
-                                        <h6 class="mb-1">AC Repair - Office 203</h6>
-                                        <div class="d-flex align-items-center mt-2">
-                                            <span class="badge bg-primary me-2">HVAC</span>
-                                            <span class="badge badge-completed me-2">Completed</span>
-                                            <span class="badge time-badge me-2">
-                                                <i class="fas fa-clock me-1"></i> 2h 15m
-                                            </span>
+                            <?php foreach ($resolvedTasks as $task): ?>
+                                <a href="#" class="list-group-item list-group-item-action history-card mb-3">
+                                    <div class="d-flex w-100 justify-content-between">
+                                        <div>
+                                            <h6 class="mb-1"><?= htmlspecialchars($task['title']) ?></h6>
+                                            <div class="d-flex align-items-center mt-2">
+                                                <span class="badge bg-primary me-2"><?= htmlspecialchars($task['category']) ?></span>
+                                                <span class="badge badge-completed me-2">Resolved</span>
+                                                <span class="badge time-badge me-2">
+                                                    <i class="fas fa-clock me-1"></i> <?= /* kira masa dari log? */ "2h 15m" ?>
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <div class="text-end">
+                                            <small class="text-muted">Resolved: <?= date('F j, Y, g:i A', strtotime($task['timestamp'])) ?></small>
                                         </div>
                                     </div>
-                                    <div class="text-end">
-                                        <small class="text-muted">Completed: Today, 3:45 PM</small>
-                                    </div>
-                                </div>
-                                <div class="d-flex mt-3">
-                                    <div class="me-3">
-                                        <small class="text-muted">Location:</small>
-                                        <p class="mb-0">East Wing, Office 203</p>
-                                    </div>
-                                    <div class="ms-auto">
-                                        <img src="https://via.placeholder.com/300x200?text=AC+Repair" class="media-preview" data-bs-toggle="modal" data-bs-target="#mediaModal">
-                                    </div>
-                                </div>
-                            </a>
-                            
-                            <!-- Completed Work Order -->
-                            <a href="#" class="list-group-item list-group-item-action history-card mb-3">
-                                <div class="d-flex w-100 justify-content-between">
-                                    <div>
-                                        <h6 class="mb-1">Leaking Pipe Repair</h6>
-                                        <div class="d-flex align-items-center mt-2">
-                                            <span class="badge bg-primary me-2">Plumbing</span>
-                                            <span class="badge badge-completed me-2">Completed</span>
-                                            <span class="badge time-badge">
-                                                <i class="fas fa-clock me-1"></i> 1h 30m
-                                            </span>
+                                    <div class="d-flex mt-3">
+                                        <div class="me-3">
+                                            <small class="text-muted">Location:</small>
+                                            <p class="mb-0"><?= htmlspecialchars($task['facilities']) ?></p>
+                                        </div>
+                                        <div class="ms-auto">
+                                            <img src="https://via.placeholder.com/300x200?text=<?= urlencode($task['title']) ?>" class="media-preview" data-bs-toggle="modal" data-bs-target="#mediaModal">
                                         </div>
                                     </div>
-                                    <div class="text-end">
-                                        <small class="text-muted">Completed: Yesterday, 11:30 AM</small>
-                                    </div>
-                                </div>
-                                <div class="d-flex mt-3">
-                                    <div class="me-3">
-                                        <small class="text-muted">Location:</small>
-                                        <p class="mb-0">Main Building, 2F Women's Restroom</p>
-                                    </div>
-                                    <div class="ms-auto">
-                                        <img src="https://via.placeholder.com/300x200?text=Pipe+Repair" class="media-preview" data-bs-toggle="modal" data-bs-target="#mediaModal">
-                                    </div>
-                                </div>
-                            </a>
-                            
-                            <!-- Cancelled Work Order -->
-                            <a href="#" class="list-group-item list-group-item-action history-card mb-3">
-                                <div class="d-flex w-100 justify-content-between">
-                                    <div>
-                                        <h6 class="mb-1">Broken Window Replacement</h6>
-                                        <div class="d-flex align-items-center mt-2">
-                                            <span class="badge bg-primary me-2">Structural</span>
-                                            <span class="badge badge-cancelled me-2">Cancelled</span>
-                                            <span class="badge time-badge">
-                                                <i class="fas fa-clock me-1"></i> 0h 20m
-                                            </span>
-                                        </div>
-                                    </div>
-                                    <div class="text-end">
-                                        <small class="text-muted">Cancelled: 2 days ago</small>
-                                    </div>
-                                </div>
-                                <div class="d-flex mt-3">
-                                    <div class="me-3">
-                                        <small class="text-muted">Location:</small>
-                                        <p class="mb-0">Conference Room B</p>
-                                    </div>
-                                </div>
-                            </a>
-                            
-                            <!-- Older Completed Work Order -->
-                            <a href="#" class="list-group-item list-group-item-action history-card">
-                                <div class="d-flex w-100 justify-content-between">
-                                    <div>
-                                        <h6 class="mb-1">Light Fixture Replacement</h6>
-                                        <div class="d-flex align-items-center mt-2">
-                                            <span class="badge bg-primary me-2">Electrical</span>
-                                            <span class="badge badge-completed me-2">Completed</span>
-                                            <span class="badge time-badge me-2">
-                                                <i class="fas fa-clock me-1"></i> 0h 45m
-                                            </span>
-                                        </div>
-                                    </div>
-                                    <div class="text-end">
-                                        <small class="text-muted">Completed: 1 week ago</small>
-                                    </div>
-                                </div>
-                                <div class="d-flex mt-3">
-                                    <div class="me-3">
-                                        <small class="text-muted">Location:</small>
-                                        <p class="mb-0">North Hallway, 1st Floor</p>
-                                    </div>
-                                    <div class="ms-auto">
-                                        <img src="https://via.placeholder.com/300x200?text=New+Fixture" class="media-preview" data-bs-toggle="modal" data-bs-target="#mediaModal">
-                                    </div>
-                                </div>
-                            </a>
+                                </a>
+                            <?php endforeach; ?>
                         </div>
-                        
+
                         <!-- Pagination -->
                         <nav aria-label="Work history pagination" class="mt-4">
                             <ul class="pagination justify-content-center">
@@ -251,7 +196,7 @@ require_once '../connection.php';
             </main>
         </div>
     </div>
-    
+
     <!-- Media Modal -->
     <div class="modal fade" id="mediaModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-lg modal-dialog-centered">
@@ -272,7 +217,7 @@ require_once '../connection.php';
             </div>
         </div>
     </div>
-    
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         // Media modal functionality
@@ -286,4 +231,5 @@ require_once '../connection.php';
         }
     </script>
 </body>
+
 </html>

@@ -1,4 +1,12 @@
-<?php require_once '../backend/process_archived.php'; ?>
+<?php 
+require_once '../backend/process_archived.php'; 
+
+// Check if admin is logged in
+if (!isset($_SESSION['user_id'])) {
+    header("Location: ../login.php");
+    exit();
+}
+?>
 
 <!DOCTYPE html>
 <html lang="en">

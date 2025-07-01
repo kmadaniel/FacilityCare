@@ -1,6 +1,13 @@
 <?php
+session_name("admin_session");
 session_start();
 require_once '../connection.php';
+
+// Check if admin is logged in
+if (!isset($_SESSION['user_id'])) {
+    header("Location: ../login.php");
+    exit();
+}
 
 // Fetch specialties from DB
 $specialties = $pdo->query("SELECT speciality_id, speciality_name FROM speciality")->fetchAll(PDO::FETCH_ASSOC);

@@ -1,9 +1,9 @@
 <?php
+session_name("technician_session");
 session_start();
 require_once '../connection.php';
 
-// Pastikan technician dah login
-if (!isset($_SESSION['technician_id'])) {
+if (!isset($_SESSION['user_id']) || !isset($_SESSION['technician_id'])) {
     header("Location: ../login.php");
     exit();
 }
@@ -159,6 +159,8 @@ $tasks = $stmt->fetchAll();
                             <?php foreach ($tasks as $task): ?>
                                 <?php
                                 $status = $task['current_status'] ?? 'new';
+                                if ($status !== 'in_progress') continue; // ← hanya teruskan jika status adalah in_progress
+
                                 $priority = strtolower($task['priority']);
                                 $statusBadge = match ($status) {
                                     'completed' => 'badge-completed',

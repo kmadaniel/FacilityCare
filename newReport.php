@@ -1,4 +1,10 @@
-<?php include('backend/process_newReport.php'); ?>
+<?php include('backend/process_newReport.php');
+if (!isset($_SESSION['user_id'])) {
+    header("Location: homepage.php");
+    exit();
+}
+?>
+
 <!DOCTYPE html>
 <html lang="en">
 
@@ -14,56 +20,76 @@
             cursor: pointer;
             transition: all 0.2s;
         }
+
         .voice-btn:hover {
             color: #0d6efd !important;
             transform: scale(1.1);
         }
+
         .voice-btn:active {
             transform: scale(0.95);
         }
+
         .object-fit-cover {
             object-fit: cover;
         }
+
         .listening {
             animation: pulse 1.5s infinite;
             color: #dc3545 !important;
         }
+
         @keyframes pulse {
-            0% { opacity: 1; }
-            50% { opacity: 0.5; }
-            100% { opacity: 1; }
+            0% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.5;
+            }
+
+            100% {
+                opacity: 1;
+            }
         }
+
         .language-selector {
             position: relative;
             display: inline-block;
         }
+
         .language-dropdown {
             display: none;
             position: absolute;
             background-color: white;
             min-width: 120px;
-            box-shadow: 0px 8px 16px rgba(0,0,0,0.1);
+            box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.1);
             z-index: 1;
             border-radius: 4px;
             padding: 5px 0;
             right: 0;
         }
+
         .language-selector:hover .language-dropdown {
             display: block;
         }
+
         .language-option {
             padding: 5px 15px;
             cursor: pointer;
             display: flex;
             align-items: center;
         }
+
         .language-option:hover {
             background-color: #f8f9fa;
         }
+
         .language-flag {
             width: 20px;
             margin-right: 8px;
         }
+
         .active-language {
             font-weight: bold;
         }
@@ -97,7 +123,9 @@
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end">
                             <li><a class="dropdown-item" href="profile.html"><i class="fas fa-user me-2"></i>My Profile</a></li>
-                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <hr class="dropdown-divider">
+                            </li>
                             <li><a class="dropdown-item text-danger" href="logout.php"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
                         </ul>
                     </li>
@@ -141,12 +169,12 @@
                                 <div class="d-flex gap-3">
                                     <?php foreach ($priorityValues as $value): ?>
                                         <?php
-                                            $badgeClass = match (strtolower($value)) {
-                                                'low' => 'bg-success',
-                                                'medium' => 'bg-warning',
-                                                'high' => 'bg-danger',
-                                                default => 'bg-secondary',
-                                            };
+                                        $badgeClass = match (strtolower($value)) {
+                                            'low' => 'bg-success',
+                                            'medium' => 'bg-warning',
+                                            'high' => 'bg-danger',
+                                            default => 'bg-secondary',
+                                        };
                                         ?>
                                         <div class="form-check">
                                             <input class="form-check-input" type="radio" name="priority" id="<?= htmlspecialchars($value) ?>" value="<?= htmlspecialchars($value) ?>" <?= strtolower($value) === 'medium' ? 'checked' : '' ?>>
@@ -159,7 +187,7 @@
                             </div>
 
                             <div class="mb-3">
-                                <label for="description" class="form-label">Detailed Description* 
+                                <label for="description" class="form-label">Detailed Description*
                                     <span class="text-muted small">
                                         <span class="language-selector">
                                             <span id="currentLanguage" class="active-language">English (US)</span>
@@ -180,7 +208,7 @@
                             </div>
 
                             <div class="mb-4">
-                                <label class="form-label">Upload Evidence (Photos/Videos) 
+                                <label class="form-label">Upload Evidence (Photos/Videos)
                                     <span class="text-muted small">
                                         <span class="language-selector">
                                             <span id="currentEvidenceLanguage" class="active-language">English (US)</span>
@@ -281,36 +309,36 @@
                 this.isListening = false;
                 this.originalPlaceholder = this.targetElement.placeholder;
                 this.currentLang = initialLang;
-                
+
                 this.init();
             }
-            
+
             init() {
                 if (!('webkitSpeechRecognition' in window)) {
                     this.disableVoiceFeature();
                     return;
                 }
-                
+
                 this.recognition = new webkitSpeechRecognition();
                 this.recognition.continuous = false;
                 this.recognition.interimResults = false;
                 this.recognition.lang = this.currentLang;
-                
+
                 this.recognition.onstart = () => this.onListeningStart();
                 this.recognition.onresult = (event) => this.onResult(event);
                 this.recognition.onerror = (event) => this.onError(event);
                 this.recognition.onend = () => this.onListeningEnd();
-                
+
                 this.buttonElement.addEventListener('click', () => this.toggleListening());
             }
-            
+
             setLanguage(langCode) {
                 this.currentLang = langCode;
                 if (this.recognition) {
                     this.recognition.lang = langCode;
                 }
             }
-            
+
             toggleListening() {
                 if (this.isListening) {
                     this.stopListening();
@@ -318,7 +346,7 @@
                     this.startListening();
                 }
             }
-            
+
             startListening() {
                 try {
                     this.targetElement.focus();
@@ -331,29 +359,29 @@
                     this.isListening = false;
                 }
             }
-            
+
             stopListening() {
                 this.recognition.stop();
                 this.isListening = false;
             }
-            
+
             onListeningStart() {
                 this.buttonElement.classList.add('listening');
                 this.showStatus("Listening... Speak now (" + this.getLanguageName() + ")");
                 this.targetElement.placeholder = "Listening... Speak now";
             }
-            
+
             onResult(event) {
                 const transcript = event.results[0][0].transcript;
                 this.targetElement.value = transcript;
                 this.showStatus("Voice input complete (" + this.getLanguageName() + ")");
             }
-            
+
             onError(event) {
                 console.error('Voice recognition error:', event.error);
                 let errorMsg = "Error occurred";
-                
-                switch(event.error) {
+
+                switch (event.error) {
                     case 'no-speech':
                         errorMsg = "No speech detected";
                         break;
@@ -366,33 +394,36 @@
                     default:
                         errorMsg = "Error: " + event.error;
                 }
-                
+
                 this.showStatus(errorMsg + " (" + this.getLanguageName() + ")", true);
             }
-            
+
             getLanguageName() {
-                switch(this.currentLang) {
-                    case 'en-US': return 'English';
-                    case 'ms-MY': return 'Malay';
-                    default: return this.currentLang;
+                switch (this.currentLang) {
+                    case 'en-US':
+                        return 'English';
+                    case 'ms-MY':
+                        return 'Malay';
+                    default:
+                        return this.currentLang;
                 }
             }
-            
+
             onListeningEnd() {
                 this.buttonElement.classList.remove('listening');
                 this.targetElement.placeholder = this.originalPlaceholder;
                 this.isListening = false;
-                
+
                 if (!this.statusElement || !this.statusElement.textContent.includes("complete")) {
                     this.showStatus("Ready for voice input (" + this.getLanguageName() + ")");
                 }
             }
-            
+
             showStatus(message, isError = false) {
                 if (this.statusElement) {
                     this.statusElement.textContent = message;
                     this.statusElement.style.color = isError ? '#dc3545' : '#6c757d';
-                    
+
                     if (isError) {
                         setTimeout(() => {
                             this.statusElement.textContent = "Ready for voice input (" + this.getLanguageName() + ")";
@@ -401,7 +432,7 @@
                     }
                 }
             }
-            
+
             disableVoiceFeature() {
                 this.buttonElement.style.display = 'none';
             }
@@ -412,20 +443,20 @@
         document.addEventListener('DOMContentLoaded', function() {
             // Description field voice recognition
             descVoice = new VoiceRecognition(
-                'description', 
+                'description',
                 'voiceDescBtn',
                 'voiceStatus',
                 currentLanguage
             );
-            
+
             // Evidence description voice recognition
             evidenceVoice = new VoiceRecognition(
-                'fileCaption', 
+                'fileCaption',
                 'voiceEvidenceBtn',
                 null,
                 currentEvidenceLanguage
             );
-            
+
             // File upload preview functionality
             document.getElementById('fileUpload').addEventListener('change', function(e) {
                 const previewArea = document.getElementById('previewArea');

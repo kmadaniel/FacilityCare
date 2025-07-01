@@ -136,40 +136,75 @@
                                     <p><?= nl2br(htmlspecialchars($report['description'])) ?></p>
                                 </div>
 
-                                <div class="mt-2">
-                                    <h6 class="mb-2"><i class="bi bi-images me-2"></i> Media Evidence</h6>
-                                    <div class="media-gallery">
-                                        <?php if (count($mediaFiles) > 0): ?>
-                                            <div class="mt-2">
-                                                <div class="d-flex flex-wrap gap-3">
-                                                    <?php foreach ($mediaFiles as $file): ?>
-                                                        <?php
-                                                        $relativePath = "../backend/" . htmlspecialchars($file['file_path']);
-                                                        $mediaType = strtolower($file['media_type']);
-                                                        ?>
-                                                        <div style="width: 140px; height: 140px; cursor: pointer; position: relative;">
-                                                            <?php if ($mediaType === 'image'): ?>
-                                                                <img src="<?= $relativePath ?>"
-                                                                    alt="Media Image"
-                                                                    class="img-thumbnail object-fit-cover w-100 h-100"
-                                                                    onclick="previewMedia('image', '<?= $relativePath ?>')">
-                                                            <?php elseif ($mediaType === 'video'): ?>
-                                                                <video muted
-                                                                    class="img-thumbnail object-fit-cover w-100 h-100"
-                                                                    onclick="previewMedia('video', '<?= $relativePath ?>')">
-                                                                    <source src="<?= $relativePath ?>" type="video/mp4">
-                                                                    Your browser does not support the video tag.
-                                                                </video>
-                                                            <?php endif; ?>
-                                                        </div>
-                                                    <?php endforeach; ?>
+                                <?php
+                                $staffMedia = [];
+                                $technicianMedia = [];
+
+                                foreach ($mediaFiles as $file) {
+                                    if ($file['uploaded_by_role'] === 'staff') {
+                                        $staffMedia[] = $file;
+                                    } elseif ($file['uploaded_by_role'] === 'technician') {
+                                        $technicianMedia[] = $file;
+                                    }
+                                }
+                                ?>
+                                <div class="mb-4">
+                                    <h6 class="mb-3"><i class="bi bi-images me-2"></i> Media Evidence</h6>
+
+                                    <!-- STAFF MEDIA -->
+                                    <h6 class="mb-2">Media Uploaded by Staff</h6>
+                                    <?php if (empty($staffMedia)): ?>
+                                        <p class="text-muted">No media uploaded by staff.</p>
+                                    <?php else: ?>
+                                        <div class="d-flex flex-wrap gap-2 mb-4">
+                                            <?php foreach ($staffMedia as $media): ?>
+                                                <?php
+                                                $relativePath = htmlspecialchars("../backend/" . $media['file_path']);
+                                                $ext = pathinfo($media['file_path'], PATHINFO_EXTENSION);
+                                                $mediaType = in_array(strtolower($ext), ['jpg', 'jpeg', 'png', 'gif']) ? 'image' : 'video';
+                                                ?>
+                                                <div style="width: 140px; height: 140px; cursor: pointer; position: relative;">
+                                                    <?php if ($mediaType === 'image'): ?>
+                                                        <img src="<?= $relativePath ?>" class="img-thumbnail object-fit-cover w-100 h-100"
+                                                            onclick="previewMedia('image', '<?= $relativePath ?>')">
+                                                    <?php else: ?>
+                                                        <video muted class="img-thumbnail object-fit-cover w-100 h-100"
+                                                            onclick="previewMedia('video', '<?= $relativePath ?>')">
+                                                            <source src="<?= $relativePath ?>" type="video/mp4">
+                                                        </video>
+                                                    <?php endif; ?>
                                                 </div>
-                                            </div>
-                                        <?php endif; ?>
+                                            <?php endforeach; ?>
+                                        </div>
+                                    <?php endif; ?>
 
-                                    </div>
+                                    <!-- TECHNICIAN MEDIA -->
+                                    <h6 class="mb-2">Media Uploaded by Technician</h6>
+                                    <?php if (empty($technicianMedia)): ?>
+                                        <p class="text-muted">No media uploaded by technician.</p>
+                                    <?php else: ?>
+                                        <div class="d-flex flex-wrap gap-2">
+                                            <?php foreach ($technicianMedia as $media): ?>
+                                                <?php
+                                                $relativePath = htmlspecialchars("../backend/" . $media['file_path']);
+                                                $ext = pathinfo($media['file_path'], PATHINFO_EXTENSION);
+                                                $mediaType = in_array(strtolower($ext), ['jpg', 'jpeg', 'png', 'gif']) ? 'image' : 'video';
+                                                ?>
+                                                <div style="width: 140px; height: 140px; cursor: pointer; position: relative;">
+                                                    <?php if ($mediaType === 'image'): ?>
+                                                        <img src="<?= $relativePath ?>" class="img-thumbnail object-fit-cover w-100 h-100"
+                                                            onclick="previewMedia('image', '<?= $relativePath ?>')">
+                                                    <?php else: ?>
+                                                        <video muted class="img-thumbnail object-fit-cover w-100 h-100"
+                                                            onclick="previewMedia('video', '<?= $relativePath ?>')">
+                                                            <source src="<?= $relativePath ?>" type="video/mp4">
+                                                        </video>
+                                                    <?php endif; ?>
+                                                </div>
+                                            <?php endforeach; ?>
+                                        </div>
+                                    <?php endif; ?>
                                 </div>
-
                             </div>
                         </div>
 
@@ -273,7 +308,7 @@
                                         </li>
                                         <li class="list-group-item px-0 d-flex justify-content-between">
                                             <span>Last Updated:</span>
-                                            <span><?= date('d M Y, h:i A', strtotime($report['timestamp'] ?? $report['created_at'])) ?></span>
+                                            <span><?= date('d M Y, h:i A', strtotime($lastUpdated)) ?></span>
                                         </li>
                                     </ul>
                                 </div>

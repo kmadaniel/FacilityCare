@@ -1,4 +1,5 @@
 <?php
+session_name("staff_session");
 session_start();
 require_once __DIR__ . '/../connection.php'; // Ensure $pdo is defined
 $enumValues = [];
@@ -115,23 +116,24 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
                     // Insert into Media table
                     $mediaStmt = $pdo->prepare("
-                        INSERT INTO Media (report_id, media_type, file_path, metadata_text, uploaded_at)
-                        VALUES (:report_id, :media_type, :file_path, :metadata_text, NOW())
+                        INSERT INTO Media (report_id, media_type, file_path, metadata_text, uploaded_at, uploaded_by_role)
+                        VALUES (:report_id, :media_type, :file_path, :metadata_text, NOW(), :role)
                     ");
                     $mediaStmt->execute([
                         ':report_id'     => $report_id,
                         ':media_type'    => $mediaType,
                         ':file_path'     => $filePath,
-                        ':metadata_text' => $metadata
+                        ':metadata_text' => $metadata,
+                        ':role'          => 'staff'  // <-- sebab ni daripada staff
                     ]);
-                    
+
                     $ext = pathinfo($filePath, PATHINFO_EXTENSION);
 
                     if ($mediaType === 'video' && strtolower($ext) === 'mp4') {
                         $escapedPath = escapeshellarg($filePath);
                         $output = shell_exec("python ../ai_scripts/process_video.py $escapedPath 2>&1");
                         file_put_contents('log.txt', $output); // Simpan output python ke log.txt
-                        
+
                         // Tunggu file siap
                         $transcriptPath = str_replace('.mp4', '_transcript.txt', $filePath);
                         $summaryPath = str_replace('.mp4', '_summary.txt', $filePath);
@@ -179,7 +181,6 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         // Redirect or show success
         header("Location: ../reportListings.php?status=success");
         exit();
-
     } catch (PDOException $e) {
         die("Error submitting report: " . $e->getMessage());
     }

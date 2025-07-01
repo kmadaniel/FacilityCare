@@ -1,6 +1,7 @@
 <?php
-require __DIR__ . '/../connection.php';
+session_name("staff_session");
 session_start();
+require __DIR__ . '/../connection.php';
 
 $userId = $_SESSION['user_id'] ?? null;
 $pending = 0;

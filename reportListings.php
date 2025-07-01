@@ -1,11 +1,12 @@
 <?php
-include 'connection.php';
+session_name("staff_session");
 session_start();
+include 'connection.php';
 
 $user_id = $_SESSION['user_id'] ?? null;
 
 if (!$user_id) {
-  header("Location: login.php");
+  header("Location: homepage.php");
   exit();
 }
 

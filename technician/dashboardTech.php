@@ -1,9 +1,9 @@
 <?php
+session_name("technician_session");
 session_start();
 require_once '../connection.php';
 
-// Semak kalau session tak wujud, redirect ke login
-if (!isset($_SESSION['technician_id'])) {
+if (!isset($_SESSION['user_id']) || !isset($_SESSION['technician_id'])) {
     header("Location: ../login.php");
     exit();
 }

@@ -1,7 +1,8 @@
 <?php
 echo '<pre>';
-print_r($_POST);
+print_r($_FILES);
 echo '</pre>';
+
 session_start();
 require_once '../connection.php';
 
@@ -29,19 +30,49 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     ");
     $stmt->execute([$reportId, $status, $notes, $changedBy]);
 
-    // Upload photos (if any)
-    if (!empty($_FILES['photo']['name'][0])) {
-        $uploadDir = '../uploads/';
-        foreach ($_FILES['photo']['tmp_name'] as $index => $tmpName) {
-            $fileName = uniqid('photo_') . '_' . basename($_FILES['photo']['name'][$index]);
+    if (!empty($_FILES['media']['name'][0])) {
+        $uploadDir = 'uploads/technician/';
+        if (!is_dir($uploadDir)) {
+            mkdir($uploadDir, 0777, true);
+        }
+
+        foreach ($_FILES['media']['tmp_name'] as $index => $tmpName) {
+            $originalName = $_FILES['media']['name'][$index];
+            $fileName = uniqid('photo_') . '_' . basename($originalName);
             $filePath = $uploadDir . $fileName;
 
+            echo "Trying to upload: $originalName to $filePath<br>";
+
             if (move_uploaded_file($tmpName, $filePath)) {
-                $stmt = $pdo->prepare("INSERT INTO media (report_id, file_path) VALUES (?, ?)");
-                $stmt->execute([$reportId, $fileName]);
+                echo "✅ Upload success<br>";
+
+                // Optional: detect type
+                $fileType = mime_content_type($filePath);
+                $mediaType = str_starts_with($fileType, 'image') ? 'image' : 'video';
+
+                $uploaderRole = 'technician'; // sebab ni datang dari form update technician
+
+                $stmt = $pdo->prepare("
+                    INSERT INTO media (report_id, file_path, media_type, uploaded_at, uploaded_by_role)
+                    VALUES (?, ?, ?, NOW(), ?)
+                ");
+                $stmt->execute([
+                    $reportId,
+                    'uploads/technician/' . $fileName,
+                    $mediaType,
+                    $uploaderRole
+                ]);
+
+                echo "✅ Inserted into media<br>";
+            } else {
+                echo "❌ Upload failed<br>";
+                echo "Temp name: $tmpName<br>";
+                echo "Is uploaded file: " . (is_uploaded_file($tmpName) ? 'yes' : 'no') . "<br>";
+                echo "Upload dir writable: " . (is_writable($uploadDir) ? 'yes' : 'no') . "<br>";
             }
         }
     }
+
 
     // Redirect back to task detail
     header("Location: ../technician/taskDetail.php?report_id=" . $reportId);

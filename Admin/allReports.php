@@ -1,6 +1,12 @@
 <?php
 require_once '../backend/process_allReports.php';
 
+// Check if admin is logged in
+if (!isset($_SESSION['user_id'])) {
+    header("Location: ../login.php");
+    exit();
+}
+
 if (isset($_GET['archive']) && is_numeric($_GET['archive']) && isset($_SESSION['user_id'])) {
     $archiveId = (int)$_GET['archive'];
 
