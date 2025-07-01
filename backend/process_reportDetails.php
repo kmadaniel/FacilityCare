@@ -26,6 +26,26 @@ $stmt = $pdo->prepare("
 $stmt->execute([$report_id]);
 $report = $stmt->fetch();
 
+$technicianName = 'Not assigned yet';
+$technicianContact = 'Not available';
+
+if (!empty($report['technician_id'])) {
+    $techStmt = $pdo->prepare("
+        SELECT u.name, t.phone_number 
+        FROM user u 
+        JOIN technician t ON u.user_id = t.technician_id 
+        WHERE u.user_id = ?
+    ");
+    $techStmt->execute([$report['technician_id']]);
+    $technician = $techStmt->fetch();
+
+    if ($technician) {
+        $technicianName = $technician['name'];
+        $technicianContact = $technician['phone_number'];
+    }
+}
+
+
 if (!$report) {
   die("Report not found.");
 }
@@ -36,7 +56,7 @@ $statusStmt->execute(['id' => $report_id]);
 $status = $statusStmt->fetchColumn() ?? 'Pending';
 
 // Fetch media
-$mediaStmt = $pdo->prepare("SELECT file_path, media_type FROM Media WHERE report_id = :id");
+$mediaStmt = $pdo->prepare("SELECT file_path, media_type, uploaded_by_role FROM Media WHERE report_id = :id");
 $mediaStmt->execute(['id' => $report_id]);
 $mediaFiles = $mediaStmt->fetchAll();
 
@@ -70,5 +90,7 @@ $initialLog = [
 
 $statusHistory[] = $initialLog; // Add it to the end since we reverse in the loop
 usort($statusHistory, fn($a, $b) => strtotime($a['timestamp']) <=> strtotime($b['timestamp'])); // Sort ascending
+
+
 
 ?>

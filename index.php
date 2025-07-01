@@ -2,7 +2,7 @@
 if (!isset($_SESSION['user_id'])) {
     header("Location: homepage.php");
     exit();
-} 
+}
 ?>
 
 <!DOCTYPE html>
@@ -44,7 +44,7 @@ if (!isset($_SESSION['user_id'])) {
                             <?php echo isset($_SESSION['name']) ? htmlspecialchars($_SESSION['name']) : 'Staff User'; ?>
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end">
-                            <li><a class="dropdown-item" href="profile.html"><i class="fas fa-user me-2"></i>My Profile</a></li>
+                            <li><a class="dropdown-item" href="profile.php"><i class="fas fa-user me-2"></i>My Profile</a></li>
                             <li>
                                 <hr class="dropdown-divider">
                             </li>
@@ -70,8 +70,6 @@ if (!isset($_SESSION['user_id'])) {
                         You have <strong><?php echo $pending; ?></strong> pending report(s)
                         and <strong><?php echo $inProgress; ?></strong> report(s) in progress.
                     </p>
-
-
                 </div>
             </div>
         </div>
@@ -104,7 +102,7 @@ if (!isset($_SESSION['user_id'])) {
                         <i class="fas fa-check-circle fa-3x text-success mb-3"></i>
                         <h5>Resolved Issues</h5>
                         <p class="text-muted">View your completed maintenance reports</p>
-                        <a href="my-reports.html?status=resolved" class="btn btn-success w-100">View History</a>
+                        <a href="reportListings.php?status=resolved" class="btn btn-success w-100">View History</a>
                     </div>
                 </div>
             </div>
@@ -149,7 +147,7 @@ if (!isset($_SESSION['user_id'])) {
                                 <h6 class="mb-1"><b><?= htmlspecialchars("{$row['title']} Updated") ?></b></h6>
                                 <small class="text-muted"><?= $timeAgo ?></small>
                             </div>
-                            <p class="mb-1"><?= htmlspecialchars( ($row['notes'] ?: 'No comment provided.')) ?></p>
+                            <p class="mb-1"><?= htmlspecialchars(($row['notes'] ?: 'No comment provided.')) ?></p>
                             <small class="<?= $statusColor ?>"><i class="fas fa-circle me-1"></i><?= htmlspecialchars($row['status']) ?></small>
                         </a>
                     <?php endforeach; ?>

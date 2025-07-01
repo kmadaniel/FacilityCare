@@ -3,9 +3,10 @@ require_once '../connection.php';
 
 function generateUserId($pdo)
 {
-    $stmt = $pdo->query("SELECT COUNT(*) FROM user WHERE position = 'technician'");
-    $count = $stmt->fetchColumn();
-    return 'T' . str_pad($count + 1, 3, '0', STR_PAD_LEFT);
+    $stmt = $pdo->query("SELECT MAX(CAST(SUBSTRING(user_id, 2) AS UNSIGNED)) AS max_id FROM user WHERE position = 'technician'");
+    $max = $stmt->fetchColumn();
+    $next = $max ? $max + 1 : 1;
+    return 'T' . str_pad($next, 3, '0', STR_PAD_LEFT);
 }
 
 // Enable errors
@@ -34,8 +35,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_FILES['profile_photo']) && $_FILES['profile_photo']['error'] === UPLOAD_ERR_OK) {
         $ext = pathinfo($_FILES['profile_photo']['name'], PATHINFO_EXTENSION);
         $photoFileName = $userId . '.' . $ext;
-        $profilePhoto = 'profile/' . $photoFileName;
-        $targetDirectory = __DIR__ . '/../profile/';
+        $profilePhoto = 'image/tech_profile/' . $photoFileName;
+        $targetDirectory = __DIR__ . '/../image/tech_profile/';
         if (!is_dir($targetDirectory)) {
             mkdir($targetDirectory, 0777, true);
         }

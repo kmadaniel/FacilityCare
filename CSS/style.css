@@ -4,13 +4,16 @@
 /* General Styles */
 body {
     font-family: 'Montserrat', sans-serif;
-    background-color: #ECF0FC; /* Light background */
-    color: #495057; /* Darker text for better contrast */
+    background-color: #ECF0FC;
+    /* Light background */
+    color: #495057;
+    /* Darker text for better contrast */
 }
 
 /* Links */
 a {
-    color: #95AEF1; /* Gold color */
+    color: #95AEF1;
+    /* Gold color */
     text-decoration: none;
 }
 
@@ -258,6 +261,61 @@ a:hover {
     border-top: 1px solid #e9ecef;
 }
 
+/* Update the profile picture styles */
+.profile-pic-container {
+  position: relative;
+  display: inline-block;
+  width: 150px;
+  height: 150px;
+}
+
+
+.profile-pic {
+  width: 150px;
+  height: 150px;
+  object-fit: cover;
+  border-radius: 50%;
+  border: 2px solid #ccc;
+}
+
+.profile-pic-upload {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 50%;
+  padding: 6px;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+}
+
+.profile-pic-upload:hover {
+    background: rgba(0, 0, 0, 0.8);
+}
+
+.profile-pic-upload i {
+    font-size: 14px;
+}
+
+.profile-pic-upload input[type="file"] {
+  display: none;
+}
+
+.profile-sidebar {
+  padding-top: 20px;
+}
+
+@media (max-width: 768px) {
+    .profile-sidebar {
+        padding-right: 0;
+        border-right: none;
+        border-bottom: 1px solid #eee;
+        padding-bottom: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+}
+
 /* Footer */
 footer {
     background-color: white;
@@ -271,7 +329,8 @@ footer h5 {
     font-weight: 600;
 }
 
-footer p, footer ul {
+footer p,
+footer ul {
     color: #6c757d;
 }
 

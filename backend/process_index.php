@@ -42,7 +42,7 @@ if ($userId) {
             foreach ($statusLogs as $log) {
                 $reportsWithStatus[] = $log['report_id'];
 
-                if (strtolower($log['status']) === 'in progress') {
+                if (str_replace('_', ' ', strtolower($log['status'])) === 'in progress') {
                     $inProgress++;
                 }
 

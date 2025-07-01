@@ -10,21 +10,8 @@ if (!$user_id) {
   exit();
 }
 
-try {
-  // Fetch reports submitted by this user
-  $stmt = $pdo->prepare("SELECT r.report_id, r.title, DATE_FORMAT(r.created_at, '%d-%m-%Y') AS formatted_date,
-        (SELECT status FROM StatusLog WHERE report_id = r.report_id ORDER BY timestamp DESC LIMIT 1) AS status
-        FROM Report r
-        WHERE r.user_id = :user_id
-        ORDER BY r.created_at DESC
-    ");
-  $stmt->execute(['user_id' => $user_id]);
-  $reports = $stmt->fetchAll();
-} catch (PDOException $e) {
-  die("Error fetching reports: " . $e->getMessage());
-}
-
 $statusFilter = $_GET['status'] ?? null;
+$statusFilter = strtolower(str_replace('_', '', $statusFilter)); // normalize filter
 
 $query = "
     SELECT r.report_id, r.title, DATE_FORMAT(r.created_at, '%d-%m-%Y') AS formatted_date,
@@ -33,16 +20,17 @@ $query = "
     WHERE r.user_id = :user_id
 ";
 
-// If filter is "pending", look for reports with no status
+// Filter "pending" (no status log exists)
 if ($statusFilter === 'pending') {
   $query .= " AND NOT EXISTS (
         SELECT 1 FROM StatusLog s WHERE s.report_id = r.report_id
     )";
-} elseif (in_array($statusFilter, ['inprogress', 'resolved'])) {
-  // Match status in subquery
-  $query .= " AND (
+}
+// Filter by specific status
+elseif (in_array($statusFilter, ['open', 'inprogress', 'resolved'])) {
+  $query .= " AND LOWER(REPLACE((
         SELECT status FROM StatusLog WHERE report_id = r.report_id ORDER BY timestamp DESC LIMIT 1
-    ) = :status";
+    ), '_', '')) = :status";
 }
 
 $query .= " ORDER BY r.created_at DESC";
@@ -51,15 +39,13 @@ $stmt = $pdo->prepare($query);
 
 // Bind values
 $params = ['user_id' => $user_id];
-if (in_array($statusFilter, ['inprogress', 'resolved'])) {
+if (in_array($statusFilter, ['open', 'inprogress', 'resolved'])) {
   $params['status'] = $statusFilter;
 }
 
 $stmt->execute($params);
 $reports = $stmt->fetchAll();
-
 ?>
-
 
 <!DOCTYPE html>
 <html lang="en">
@@ -96,10 +82,11 @@ $reports = $stmt->fetchAll();
           </li>
           <li class="nav-item dropdown">
             <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
-              <i class="fas fa-user-circle me-1"></i> <?php echo isset($_SESSION['name']) ? htmlspecialchars($_SESSION['name']) : 'Staff User'; ?>
+              <i class="fas fa-user-circle me-1"></i>
+              <?php echo isset($_SESSION['name']) ? htmlspecialchars($_SESSION['name']) : 'Staff User'; ?>
             </a>
             <ul class="dropdown-menu dropdown-menu-end">
-              <li><a class="dropdown-item" href="profile.html"><i class="fas fa-user me-2"></i>My Profile</a></li>
+              <li><a class="dropdown-item" href="profile.php"><i class="fas fa-user me-2"></i>My Profile</a></li>
               <li>
                 <hr class="dropdown-divider">
               </li>
@@ -119,6 +106,7 @@ $reports = $stmt->fetchAll();
     <div class="mb-4">
       <a href="reportListings.php?" class="btn btn-outline-primary me-2">All</a>
       <a href="reportListings.php?status=pending" class="btn btn-outline-secondary me-2">Pending</a>
+      <a href="reportListings.php?status=open" class="btn btn-outline-info me-2">Open</a>
       <a href="reportListings.php?status=inprogress" class="btn btn-outline-warning me-2">In Progress</a>
       <a href="reportListings.php?status=resolved" class="btn btn-outline-success">Resolved</a>
     </div>
