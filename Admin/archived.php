@@ -81,42 +81,45 @@
                 <!-- Filters Card -->
                 <div class="card filter-card mb-4">
                     <div class="card-body">
-                        <form class="row g-3">
+                        <form class="row g-3" method="GET" action="">
                             <div class="col-md-4">
                                 <label for="categoryFilter" class="form-label">Category</label>
-                                <select id="categoryFilter" class="form-select">
-                                    <option selected value="">All Categories</option>
-                                    <option>Plumbing</option>
-                                    <option>Electrical</option>
-                                    <option>HVAC</option>
-                                    <option>Structural</option>
-                                    <option>Cleaning</option>
+                                <select id="categoryFilter" name="category" class="form-select">
+                                    <option value="">All Categories</option>
+                                    <option <?= isset($_GET['category']) && $_GET['category'] == 'Plumbing' ? 'selected' : '' ?>>Plumbing</option>
+                                    <option <?= isset($_GET['category']) && $_GET['category'] == 'Electrical' ? 'selected' : '' ?>>Electrical</option>
+                                    <option <?= isset($_GET['category']) && $_GET['category'] == 'HVAC' ? 'selected' : '' ?>>HVAC</option>
+                                    <option <?= isset($_GET['category']) && $_GET['category'] == 'Structural' ? 'selected' : '' ?>>Structural</option>
+                                    <option <?= isset($_GET['category']) && $_GET['category'] == 'Cleaning' ? 'selected' : '' ?>>Cleaning</option>
                                 </select>
                             </div>
+
                             <div class="col-md-4">
                                 <label for="priorityFilter" class="form-label">Priority</label>
-                                <select id="priorityFilter" class="form-select">
-                                    <option selected value="">All Priority Levels</option>
-                                    <option>High</option>
-                                    <option>Medium</option>
-                                    <option>Low</option>
+                                <select id="priorityFilter" name="priority" class="form-select">
+                                    <option value="">All Priority Levels</option>
+                                    <option <?= isset($_GET['priority']) && $_GET['priority'] == 'High' ? 'selected' : '' ?>>High</option>
+                                    <option <?= isset($_GET['priority']) && $_GET['priority'] == 'Medium' ? 'selected' : '' ?>>Medium</option>
+                                    <option <?= isset($_GET['priority']) && $_GET['priority'] == 'Low' ? 'selected' : '' ?>>Low</option>
                                 </select>
                             </div>
+
                             <div class="col-md-4">
                                 <label for="dateFilter" class="form-label">Archived Date</label>
-                                <select id="dateFilter" class="form-select">
-                                    <option selected value="">All Time</option>
-                                    <option>Today</option>
-                                    <option>This Week</option>
-                                    <option>This Month</option>
-                                    <option>Custom Range</option>
+                                <select id="dateFilter" name="date" class="form-select">
+                                    <option value="">All Time</option>
+                                    <option <?= isset($_GET['date']) && $_GET['date'] == 'today' ? 'selected' : '' ?>>Today</option>
+                                    <option <?= isset($_GET['date']) && $_GET['date'] == 'this_week' ? 'selected' : '' ?>>This Week</option>
+                                    <option <?= isset($_GET['date']) && $_GET['date'] == 'this_month' ? 'selected' : '' ?>>This Month</option>
+                                    <option <?= isset($_GET['date']) && $_GET['date'] == 'custom' ? 'selected' : '' ?>>Custom Range</option>
                                 </select>
                             </div>
+
                             <div class="col-12">
                                 <div class="d-flex justify-content-end">
-                                    <button type="button" class="btn btn-outline-secondary me-2">
+                                    <a href="archivedReports.php" class="btn btn-outline-secondary me-2">
                                         <i class="bi bi-arrow-counterclockwise me-1"></i> Reset
-                                    </button>
+                                    </a>
                                     <button type="submit" class="btn btn-primary">
                                         <i class="bi bi-funnel me-1"></i> Apply Filters
                                     </button>
@@ -233,7 +236,7 @@
         </div>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    
+
 </body>
 
 </html>

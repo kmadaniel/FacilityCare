@@ -39,14 +39,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             header("Location: ../Admin/dashboard.php");
         } elseif ($firstChar === 'S') {
             header("Location: ../index.php");
+        } elseif ($firstChar === 'T') {
+            $_SESSION['technician_id'] = $user['user_id'];
+            header("Location: ../technician/dashboardTech.php"); // <-- tukar ikut file technician punya dashboard
         } else {
             $_SESSION['login_error'] = "Unrecognized user role.";
             header("Location: ../login.php");
         }
-
     } catch (PDOException $e) {
         $_SESSION['login_error'] = "Database error: " . $e->getMessage();
         header("Location: ../login.php");
     }
 }
-?>

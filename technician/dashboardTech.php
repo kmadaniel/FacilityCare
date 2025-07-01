@@ -1,5 +1,74 @@
+<?php
+session_start();
+require_once '../connection.php';
+
+// Semak kalau session tak wujud, redirect ke login
+if (!isset($_SESSION['technician_id'])) {
+    header("Location: ../login.php");
+    exit();
+}
+
+$technicianId = $_SESSION['technician_id'];
+
+// Assigned Tasks
+$stmt = $pdo->prepare("SELECT COUNT(*) FROM report WHERE technician_id = ?");
+$stmt->execute([$technicianId]);
+$assignedTasks = $stmt->fetchColumn();
+
+// In Progress Tasks
+$stmt = $pdo->prepare("
+    SELECT COUNT(*) FROM report 
+    INNER JOIN statuslog ON report.report_id = statuslog.report_id 
+    WHERE report.technician_id = ? 
+    AND statuslog.status = 'in_progress'
+    AND statuslog.timestamp = (
+        SELECT MAX(s2.timestamp) 
+        FROM statuslog s2 
+        WHERE s2.report_id = report.report_id
+    )
+");
+$stmt->execute([$technicianId]);
+$inProgress = $stmt->fetchColumn();
+
+// Completed Today
+$stmt = $pdo->prepare("
+    SELECT COUNT(*) FROM report 
+    INNER JOIN statuslog ON report.report_id = statuslog.report_id 
+    WHERE report.technician_id = ? 
+    AND statuslog.status = 'completed'
+    AND DATE(statuslog.timestamp) = CURDATE()
+    AND statuslog.timestamp = (
+        SELECT MAX(s2.timestamp) 
+        FROM statuslog s2 
+        WHERE s2.report_id = report.report_id
+    )
+");
+$stmt->execute([$technicianId]);
+$completedToday = $stmt->fetchColumn();
+
+// Get current assignments for technician
+$stmt = $pdo->prepare("
+    SELECT r.report_id, r.title, r.facilities, r.priority, sl.status, sl.timestamp
+    FROM report r
+    JOIN (
+        SELECT report_id, status, timestamp
+        FROM statuslog s1
+        WHERE timestamp = (
+            SELECT MAX(timestamp) FROM statuslog s2 WHERE s2.report_id = s1.report_id
+        )
+    ) sl ON r.report_id = sl.report_id
+    WHERE r.technician_id = ?
+    AND sl.status IN ('assigned', 'in_progress')
+    ORDER BY sl.timestamp DESC
+");
+$stmt->execute([$technicianId]);
+$assignments = $stmt->fetchAll();
+?>
+
+
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,6 +78,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     <link rel="stylesheet" href="../CSS/styleT.css">
 </head>
+
 <body>
     <div class="container-fluid">
         <div class="row">
@@ -42,11 +112,14 @@
                     <hr class="text-white-50">
                     <div class="dropdown">
                         <a href="#" class="d-flex justify-content-center align-items-center text-white text-decoration-none dropdown-toggle" data-bs-toggle="dropdown">
-                            <strong>Technician User</strong>
+                            <strong> <?php echo isset($_SESSION['name']) ? htmlspecialchars($_SESSION['name']) : 'Technician User'; ?></strong>
                         </a>
                         <ul class="dropdown-menu dropdown-menu-dark text-small shadow">
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="#"><i class="bi bi-box-arrow-left me-2"></i>Sign out</a></li>
+                            <li><a class="dropdown-item" href="#"><i class="bi bi-person me-2"></i>Profile</a></li>
+                            <li>
+                                <hr class="dropdown-divider">
+                            </li>
+                            <li><a class="dropdown-item" href="../logout.php"><i class="bi bi-box-arrow-left me-2"></i>Sign out</a></li>
                         </ul>
                     </div>
                 </div>
@@ -71,7 +144,7 @@
                                 <div class="d-flex justify-content-between">
                                     <div>
                                         <h6 class="text-muted mb-2">Assigned Tasks</h6>
-                                        <h3 class="mb-0">5</h3>
+                                        <h3 class="mb-0"><?= $assignedTasks ?></h3>
                                     </div>
                                     <div style="color: var(--tech-secondary);">
                                         <i class="fas fa-clipboard-list fa-2x"></i>
@@ -86,7 +159,7 @@
                                 <div class="d-flex justify-content-between">
                                     <div>
                                         <h6 class="text-muted mb-2">In Progress</h6>
-                                        <h3 class="mb-0">2</h3>
+                                        <h3 class="mb-0"><?= $inProgress ?></h3>
                                     </div>
                                     <div style="color: var(--tech-primary);">
                                         <i class="fas fa-tools fa-2x"></i>
@@ -101,7 +174,7 @@
                                 <div class="d-flex justify-content-between">
                                     <div>
                                         <h6 class="text-muted mb-2">Completed Today</h6>
-                                        <h3 class="mb-0">3</h3>
+                                        <h3 class="mb-0"><?= $completedToday ?></h3>
                                     </div>
                                     <div style="color: var(--tech-accent);">
                                         <i class="fas fa-check-circle fa-2x"></i>
@@ -119,46 +192,38 @@
                     </div>
                     <div class="card-body">
                         <div class="list-group list-group-flush">
-                            <a href="taskDetail.php" class="list-group-item list-group-item-action">
-                                <div class="d-flex w-100 justify-content-between">
-                                    <h6 class="mb-1">Leaking pipe in restroom</h6>
-                                    <span class="badge badge-tech badge-assigned">Assigned</span>
-                                </div>
-                                <div class="d-flex mt-2">
-                                    <div class="me-3">
-                                        <small class="text-muted">Location:</small>
-                                        <p class="mb-0">Main Building, 2F Women's Restroom</p>
-                                    </div>
-                                    <div class="me-3">
-                                        <small class="text-muted">Priority:</small>
-                                        <p class="mb-0 text-danger">High</p>
-                                    </div>
-                                    <div>
-                                        <small class="text-muted">Assigned:</small>
-                                        <p class="mb-0">Today, 10:30 AM</p>
-                                    </div>
-                                </div>
-                            </a>
-                            <a href="#" class="list-group-item list-group-item-action">
-                                <div class="d-flex w-100 justify-content-between">
-                                    <h6 class="mb-1">AC not cooling in office 203</h6>
-                                    <span class="badge badge-tech badge-inprogress">In Progress</span>
-                                </div>
-                                <div class="d-flex mt-2">
-                                    <div class="me-3">
-                                        <small class="text-muted">Location:</small>
-                                        <p class="mb-0">East Wing, Office 203</p>
-                                    </div>
-                                    <div class="me-3">
-                                        <small class="text-muted">Priority:</small>
-                                        <p class="mb-0 text-warning">Medium</p>
-                                    </div>
-                                    <div>
-                                        <small class="text-muted">Started:</small>
-                                        <p class="mb-0">Yesterday, 2:15 PM</p>
-                                    </div>
-                                </div>
-                            </a>
+                            <?php if (empty($assignments)): ?>
+                                <p class="text-muted">No current assignments.</p>
+                            <?php else: ?>
+                                <?php foreach ($assignments as $task): ?>
+                                    <a href="taskDetail.php?report_id=<?= $task['report_id'] ?>" class="list-group-item list-group-item-action">
+                                        <div class="d-flex w-100 justify-content-between">
+                                            <h6 class="mb-1"><?= htmlspecialchars($task['title']) ?></h6>
+                                            <?php if ($task['status'] === 'assigned'): ?>
+                                                <span class="badge badge-tech badge-assigned">Assigned</span>
+                                            <?php elseif ($task['status'] === 'in_progress'): ?>
+                                                <span class="badge badge-tech badge-inprogress">In Progress</span>
+                                            <?php endif; ?>
+                                        </div>
+                                        <div class="d-flex mt-2">
+                                            <div class="me-3">
+                                                <small class="text-muted">Location:</small>
+                                                <p class="mb-0"><?= htmlspecialchars($task['facilities']) ?></p>
+                                            </div>
+                                            <div class="me-3">
+                                                <small class="text-muted">Priority:</small>
+                                                <p class="mb-0 text-<?= $task['priority'] === 'high' ? 'danger' : ($task['priority'] === 'medium' ? 'warning' : 'success') ?>">
+                                                    <?= ucfirst($task['priority']) ?>
+                                                </p>
+                                            </div>
+                                            <div>
+                                                <small class="text-muted"><?= $task['status'] === 'assigned' ? 'Assigned:' : 'Started:' ?></small>
+                                                <p class="mb-0"><?= date("F j, Y, g:i A", strtotime($task['timestamp'])) ?></p>
+                                            </div>
+                                        </div>
+                                    </a>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
                         </div>
                     </div>
                 </div>
@@ -198,4 +263,5 @@
     </div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
+
 </html>

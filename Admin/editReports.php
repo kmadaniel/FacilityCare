@@ -305,13 +305,31 @@ if (!empty($report['latest_status'])) {
                                             <select class="form-select" name="technician_id" required>
                                                 <option value="">-- Select Technician --</option>
                                                 <?php
-                                                $techStmt = $pdo->query("SELECT u.user_id, u.name, u.role FROM user u WHERE u.position = 'technician'");
-                                                while ($tech = $techStmt->fetch()):
+                                                // Dapatkan speciality_id dari nama category report
+                                                $specStmt = $pdo->prepare("SELECT speciality_id FROM speciality WHERE speciality_name = ?");
+                                                $specStmt->execute([$report['category']]);
+                                                $speciality = $specStmt->fetch();
+                                                $specialityId = $speciality['speciality_id'] ?? null;
+
+                                                // Fetch technician ikut speciality
+                                                if ($specialityId) {
+                                                    $techStmt = $pdo->prepare("
+                                                        SELECT u.user_id, u.name, u.role 
+                                                        FROM user u
+                                                        JOIN technician_speciality ts ON ts.technician_id = u.user_id
+                                                        WHERE u.position = 'technician' AND ts.speciality_id = ?
+                                                    ");
+                                                    $techStmt->execute([$specialityId]);
+
+                                                    while ($tech = $techStmt->fetch()):
                                                 ?>
-                                                    <option value="<?= $tech['user_id'] ?>" <?= ($report['technician_id'] === $tech['user_id']) ? 'selected' : '' ?>>
-                                                        <?= htmlspecialchars($tech['name']) ?> (<?= $tech['role'] ?>)
-                                                    </option>
-                                                <?php endwhile; ?>
+                                                        <option value="<?= $tech['user_id'] ?>" <?= ($report['technician_id'] === $tech['user_id']) ? 'selected' : '' ?>>
+                                                            <?= htmlspecialchars($tech['name']) ?> (<?= $tech['role'] ?>)
+                                                        </option>
+                                                <?php
+                                                    endwhile;
+                                                }
+                                                ?>
                                             </select>
                                         </div>
 

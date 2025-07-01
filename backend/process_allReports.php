@@ -11,6 +11,9 @@ $startDate      = $_GET['start_date'] ?? '';
 $endDate        = $_GET['end_date'] ?? '';
 $searchQuery    = $_GET['search'] ?? '';
 
+$filterConditions = "WHERE 1";
+$params = [];
+
 // Pagination setup
 $limit  = 5;
 $page   = isset($_GET['page']) && is_numeric($_GET['page']) ? (int) $_GET['page'] : 1;
@@ -25,7 +28,6 @@ $params = [];
 $filterConditions .= " AND r.archive = 0";
 $params = [];
 
-
 // Search (used in both main and count queries)
 if (!empty($searchQuery)) {
     $filterConditions .= " AND (
@@ -37,16 +39,24 @@ if (!empty($searchQuery)) {
     $params[':search'] = '%' . $searchQuery . '%';
 }
 
-// Status
+// Status (handle pending manually)
 if (!empty($statusFilter)) {
-    $filterConditions .= " AND (
-        SELECT sl.status 
-        FROM statuslog sl 
-        WHERE sl.report_id = r.report_id 
-        ORDER BY sl.timestamp DESC 
-        LIMIT 1
-    ) = :status";
-    $params[':status'] = $statusFilter;
+    if ($statusFilter === 'pending') {
+        // report yang takde langsung entry dalam statuslog
+        $filterConditions .= " AND (
+            SELECT COUNT(*) FROM statuslog sl WHERE sl.report_id = r.report_id
+        ) = 0";
+    } else {
+        // report yang ada entry, dan latest status = apa yg ditapis
+        $filterConditions .= " AND (
+            SELECT sl.status 
+            FROM statuslog sl 
+            WHERE sl.report_id = r.report_id 
+            ORDER BY sl.timestamp DESC 
+            LIMIT 1
+        ) = :status";
+        $params[':status'] = $statusFilter;
+    }
 }
 
 // Category
@@ -134,6 +144,5 @@ $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
 
 $stmt->execute();
 $reports = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
 
 ?>

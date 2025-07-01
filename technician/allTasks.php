@@ -1,5 +1,31 @@
+<?php
+session_start();
+require_once '../connection.php';
+
+// Pastikan technician dah login
+if (!isset($_SESSION['technician_id'])) {
+    header("Location: ../login.php");
+    exit();
+}
+
+$technicianId = $_SESSION['technician_id'];
+
+// Fetch report yang assigned kepada technician ni
+$stmt = $pdo->prepare("
+    SELECT r.*, 
+           (SELECT status FROM statuslog WHERE report_id = r.report_id ORDER BY timestamp DESC LIMIT 1) as current_status,
+           (SELECT timestamp FROM statuslog WHERE report_id = r.report_id AND status IN ('assigned','in_progress') ORDER BY timestamp ASC LIMIT 1) as assigned_time
+    FROM report r 
+    WHERE r.technician_id = ?
+    ORDER BY r.created_at DESC
+");
+$stmt->execute([$technicianId]);
+$tasks = $stmt->fetchAll();
+?>
+
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,8 +34,9 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="../CSS/styleT.css">
 </head>
+
 <body>
-     <div class="container-fluid">
+    <div class="container-fluid">
         <div class="row">
             <!-- Technician Sidebar -->
             <div class="col-md-3 col-lg-2 d-md-block tech-sidebar p-0">
@@ -41,12 +68,14 @@
                     <hr class="text-white-50">
                     <div class="dropdown">
                         <a href="#" class="d-flex justify-content-center align-items-center text-white text-decoration-none dropdown-toggle" data-bs-toggle="dropdown">
-                            <strong>Technician User</strong>
+                            <strong> <?php echo isset($_SESSION['name']) ? htmlspecialchars($_SESSION['name']) : 'Technician User'; ?></strong>
                         </a>
                         <ul class="dropdown-menu dropdown-menu-dark text-small shadow">
-                            <!-- <li><a class="dropdown-item" href="#"><i class="bi bi-person me-2"></i>Profile</a></li> -->
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="#"><i class="bi bi-box-arrow-left me-2"></i>Sign out</a></li>
+                            <li><a class="dropdown-item" href="#"><i class="bi bi-person me-2"></i>Profile</a></li>
+                            <li>
+                                <hr class="dropdown-divider">
+                            </li>
+                            <li><a class="dropdown-item" href="../logout.php"><i class="bi bi-box-arrow-left me-2"></i>Sign out</a></li>
                         </ul>
                     </div>
                 </div>
@@ -127,152 +156,63 @@
                     </div>
                     <div class="card-body">
                         <div class="list-group list-group-flush">
-                            <!-- High Priority Assignment -->
-                            <a href="taskDetail.php" class="list-group-item list-group-item-action assignment-card priority-high">
-                                <div class="d-flex w-100 justify-content-between">
-                                    <h6 class="mb-1">
-                                        <i class="fas fa-exclamation-circle text-danger me-2"></i>
-                                        Leaking pipe in restroom
-                                    </h6>
-                                    <span class="badge badge-tech badge-assigned">Assigned</span>
-                                </div>
-                                <div class="d-flex flex-wrap mt-2">
-                                    <div class="me-3 mb-1">
-                                        <small class="text-muted">Location:</small>
-                                        <p class="mb-0">Main Building, 2F Women's Restroom</p>
+                            <?php foreach ($tasks as $task): ?>
+                                <?php
+                                $status = $task['current_status'] ?? 'new';
+                                $priority = strtolower($task['priority']);
+                                $statusBadge = match ($status) {
+                                    'completed' => 'badge-completed',
+                                    'in_progress' => 'badge-inprogress',
+                                    'overdue' => 'badge-overdue',
+                                    'assigned' => 'badge-assigned',
+                                    default => 'badge-assigned'
+                                };
+                                $priorityClass = match ($priority) {
+                                    'high' => 'priority-high',
+                                    'medium' => 'priority-medium',
+                                    'low' => 'priority-low',
+                                    default => ''
+                                };
+                                $icon = match ($status) {
+                                    'completed' => '<i class="fas fa-check-circle text-success me-2"></i>',
+                                    'in_progress' => '<i class="fas fa-tools text-primary me-2"></i>',
+                                    'overdue' => '<i class="fas fa-exclamation-triangle text-danger me-2"></i>',
+                                    default => '<i class="fas fa-bell text-warning me-2"></i>'
+                                };
+                                $assignedDate = $task['assigned_time']
+                                    ? date("F j, Y, g:i A", strtotime($task['assigned_time']))
+                                    : 'N/A';
+                                ?>
+                                <a href="taskDetail.php?report_id=<?= $task['report_id'] ?>" class="list-group-item list-group-item-action assignment-card <?= $priorityClass ?>">
+                                    <div class="d-flex w-100 justify-content-between">
+                                        <h6 class="mb-1"><?= $icon ?><?= htmlspecialchars($task['title']) ?></h6>
+                                        <span class="badge badge-tech <?= $statusBadge ?>"><?= ucfirst(str_replace('_', ' ', $status)) ?></span>
                                     </div>
-                                    <div class="me-3 mb-1">
-                                        <small class="text-muted">Category:</small>
-                                        <p class="mb-0">Plumbing</p>
+                                    <div class="d-flex flex-wrap mt-2">
+                                        <div class="me-3 mb-1">
+                                            <small class="text-muted">Location:</small>
+                                            <p class="mb-0"><?= htmlspecialchars($task['facilities']) ?></p>
+                                        </div>
+                                        <div class="me-3 mb-1">
+                                            <small class="text-muted">Category:</small>
+                                            <p class="mb-0"><?= htmlspecialchars($task['category']) ?></p>
+                                        </div>
+                                        <div class="me-3 mb-1">
+                                            <small class="text-muted">Assigned:</small>
+                                            <p class="mb-0"><?= $assignedDate ?></p>
+                                        </div>
+                                        <div class="me-3 mb-1">
+                                            <small class="text-muted">Priority:</small>
+                                            <p class="mb-0 text-<?= $priority === 'high' ? 'danger' : ($priority === 'medium' ? 'warning' : 'success') ?>">
+                                                <?= ucfirst($priority) ?>
+                                            </p>
+                                        </div>
                                     </div>
-                                    <div class="me-3 mb-1">
-                                        <small class="text-muted">Assigned:</small>
-                                        <p class="mb-0">Today, 10:30 AM</p>
-                                    </div>
-                                    <div class="me-3 mb-1">
-                                        <small class="text-muted">Due:</small>
-                                        <p class="mb-0 text-danger">Today, EOD</p>
-                                    </div>
-                                </div>
-                            </a>
-                            
-                            <!-- In Progress Assignment -->
-                            <a href="#" class="list-group-item list-group-item-action assignment-card priority-medium">
-                                <div class="d-flex w-100 justify-content-between">
-                                    <h6 class="mb-1">
-                                        <i class="fas fa-tools text-primary me-2"></i>
-                                        AC not cooling in office 203
-                                    </h6>
-                                    <span class="badge badge-tech badge-inprogress">In Progress</span>
-                                </div>
-                                <div class="d-flex flex-wrap mt-2">
-                                    <div class="me-3 mb-1">
-                                        <small class="text-muted">Location:</small>
-                                        <p class="mb-0">East Wing, Office 203</p>
-                                    </div>
-                                    <div class="me-3 mb-1">
-                                        <small class="text-muted">Category:</small>
-                                        <p class="mb-0">HVAC</p>
-                                    </div>
-                                    <div class="me-3 mb-1">
-                                        <small class="text-muted">Started:</small>
-                                        <p class="mb-0">Yesterday, 2:15 PM</p>
-                                    </div>
-                                    <div class="me-3 mb-1">
-                                        <small class="text-muted">Time Spent:</small>
-                                        <p class="mb-0">2 hours 15 mins</p>
-                                    </div>
-                                </div>
-                            </a>
-                            
-                            <!-- Completed Assignment -->
-                            <a href="#" class="list-group-item list-group-item-action assignment-card priority-low">
-                                <div class="d-flex w-100 justify-content-between">
-                                    <h6 class="mb-1">
-                                        <i class="fas fa-check-circle text-success me-2"></i>
-                                        Broken light fixture in hallway
-                                    </h6>
-                                    <span class="badge badge-tech badge-completed">Completed</span>
-                                </div>
-                                <div class="d-flex flex-wrap mt-2">
-                                    <div class="me-3 mb-1">
-                                        <small class="text-muted">Location:</small>
-                                        <p class="mb-0">North Hallway, 1st Floor</p>
-                                    </div>
-                                    <div class="me-3 mb-1">
-                                        <small class="text-muted">Category:</small>
-                                        <p class="mb-0">Electrical</p>
-                                    </div>
-                                    <div class="me-3 mb-1">
-                                        <small class="text-muted">Completed:</small>
-                                        <p class="mb-0">Today, 9:15 AM</p>
-                                    </div>
-                                    <div class="me-3 mb-1">
-                                        <small class="text-muted">Time Spent:</small>
-                                        <p class="mb-0">45 mins</p>
-                                    </div>
-                                </div>
-                            </a>
-                            
-                            <!-- Overdue Assignment -->
-                            <a href="#" class="list-group-item list-group-item-action assignment-card priority-high">
-                                <div class="d-flex w-100 justify-content-between">
-                                    <h6 class="mb-1">
-                                        <i class="fas fa-exclamation-triangle text-danger me-2"></i>
-                                        Clogged drain in kitchen
-                                    </h6>
-                                    <span class="badge badge-tech badge-overdue">Overdue</span>
-                                </div>
-                                <div class="d-flex flex-wrap mt-2">
-                                    <div class="me-3 mb-1">
-                                        <small class="text-muted">Location:</small>
-                                        <p class="mb-0">Main Kitchen</p>
-                                    </div>
-                                    <div class="me-3 mb-1">
-                                        <small class="text-muted">Category:</small>
-                                        <p class="mb-0">Plumbing</p>
-                                    </div>
-                                    <div class="me-3 mb-1">
-                                        <small class="text-muted">Assigned:</small>
-                                        <p class="mb-0">2 days ago</p>
-                                    </div>
-                                    <div class="me-3 mb-1">
-                                        <small class="text-muted">Due:</small>
-                                        <p class="mb-0 text-danger">Yesterday, EOD</p>
-                                    </div>
-                                </div>
-                            </a>
-                            
-                            <!-- New Assignment -->
-                            <a href="#" class="list-group-item list-group-item-action assignment-card priority-medium">
-                                <div class="d-flex w-100 justify-content-between">
-                                    <h6 class="mb-1">
-                                        <i class="fas fa-bell text-warning me-2"></i>
-                                        Squeaky door in conference room
-                                    </h6>
-                                    <span class="badge badge-tech badge-assigned">New</span>
-                                </div>
-                                <div class="d-flex flex-wrap mt-2">
-                                    <div class="me-3 mb-1">
-                                        <small class="text-muted">Location:</small>
-                                        <p class="mb-0">Executive Conference Room</p>
-                                    </div>
-                                    <div class="me-3 mb-1">
-                                        <small class="text-muted">Category:</small>
-                                        <p class="mb-0">Structural</p>
-                                    </div>
-                                    <div class="me-3 mb-1">
-                                        <small class="text-muted">Assigned:</small>
-                                        <p class="mb-0">30 mins ago</p>
-                                    </div>
-                                    <div class="me-3 mb-1">
-                                        <small class="text-muted">Due:</small>
-                                        <p class="mb-0">Tomorrow, EOD</p>
-                                    </div>
-                                </div>
-                            </a>
+                                </a>
+                            <?php endforeach; ?>
                         </div>
-                        
+
+
                         <!-- Pagination -->
                         <nav aria-label="Assignments pagination" class="mt-4">
                             <ul class="pagination justify-content-center">
@@ -304,4 +244,5 @@
         });
     </script>
 </body>
+
 </html>

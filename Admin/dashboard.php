@@ -24,7 +24,7 @@ $inProgressStmt = $pdo->query("
         SELECT status FROM StatusLog s
         WHERE s.report_id = r.report_id
         ORDER BY timestamp DESC LIMIT 1
-    ) = 'inprogress'
+    ) = 'in_progress'
 ");
 $inProgress = $inProgressStmt->fetchColumn();
 
@@ -38,6 +38,16 @@ $resolvedStmt = $pdo->query("
     ) = 'resolved'
 ");
 $resolved = $resolvedStmt->fetchColumn();
+
+// Count reports with no status at all = 'pending'
+$pendingStmt = $pdo->query("
+    SELECT COUNT(*) FROM Report r
+    WHERE NOT EXISTS (
+        SELECT 1 FROM StatusLog s
+        WHERE s.report_id = r.report_id
+    )
+");
+$pending = $pendingStmt->fetchColumn();
 
 // Fetch recent reports with their latest status
 $reportsStmt = $pdo->query("
@@ -60,8 +70,41 @@ $reportsStmt = $pdo->query("
     LIMIT 10
 ");
 $reports = $reportsStmt->fetchAll();
-?>
 
+$categoryCounts = $pdo->query("
+    SELECT category, COUNT(*) as total 
+    FROM report 
+    GROUP BY category
+")->fetchAll(PDO::FETCH_ASSOC);
+
+$categories = [];
+$totals = [];
+
+foreach ($categoryCounts as $row) {
+    $categories[] = $row['category'];
+    $totals[] = $row['total'];
+}
+
+$resolutionTimeQuery = $pdo->query("
+    SELECT r.category, 
+           AVG(TIMESTAMPDIFF(HOUR, r.created_at, sl.timestamp)) AS avg_hours
+    FROM report r
+    JOIN statuslog sl ON r.report_id = sl.report_id
+    WHERE sl.status = 'resolved'
+    GROUP BY r.category
+");
+
+$resolutionData = $resolutionTimeQuery->fetchAll(PDO::FETCH_ASSOC);
+
+$resolutionLabels = [];
+$resolutionHours = [];
+
+foreach ($resolutionData as $row) {
+    $resolutionLabels[] = $row['category'];
+    $resolutionHours[] = round($row['avg_hours'], 2); // 2 decimal places
+}
+
+?>
 
 <!DOCTYPE html>
 <html lang="en">
@@ -142,7 +185,7 @@ $reports = $reportsStmt->fetchAll();
                 </div>
 
                 <!-- Stats Cards -->
-                <div class="row mb-4">
+                <div class="row mb-3">
                     <div class="col-md-3 mb-3">
                         <div class="card admin-card h-100">
                             <div class="card-body">
@@ -153,6 +196,21 @@ $reports = $reportsStmt->fetchAll();
                                     </div>
                                     <div class="text-primary">
                                         <i class="bi bi-clipboard2-pulse"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="card admin-card h-100">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between">
+                                    <div>
+                                        <h6 class="text-muted mb-2">Pending</h6>
+                                        <h3 class="mb-0"><?= $pending ?></h3>
+                                    </div>
+                                    <div class="text-secondary">
+                                        <i class="bi bi-clock-history"></i>
                                     </div>
                                 </div>
                             </div>
@@ -206,34 +264,29 @@ $reports = $reportsStmt->fetchAll();
                 </div>
 
                 <!-- Charts Row -->
-                <!-- <div class="row mb-4">
+                <div class="row mb-4">
                     <div class="col-md-6 mb-3">
                         <div class="card admin-card h-100">
                             <div class="card-body">
                                 <h6 class="card-title">Reports by Category</h6>
-                                <div class="chart-container"> -->
-                <!-- Chart would go here -->
-                <!-- <div class="d-flex align-items-center justify-content-center h-100">
-                                        <p class="text-muted">[Chart: Reports by Category]</p>
-                                    </div>
+                                <div class="chart-container">
+                                    <canvas id="categoryChart"></canvas>
                                 </div>
                             </div>
                         </div>
                     </div>
+
                     <div class="col-md-6 mb-3">
                         <div class="card admin-card h-100">
                             <div class="card-body">
-                                <h6 class="card-title">Resolution Time</h6>
-                                <div class="chart-container"> -->
-                <!-- Chart would go here -->
-                <!-- <div class="d-flex align-items-center justify-content-center h-100">
-                                        <p class="text-muted">[Chart: Resolution Time]</p>
-                                    </div>
+                                <h6 class="card-title">Avg Resolution Time (Hours)</h6>
+                                <div class="chart-container">
+                                    <canvas id="resolutionChart"></canvas>
                                 </div>
                             </div>
                         </div>
                     </div>
-                </div> -->
+                </div>
 
                 <!-- Recent Reports Table -->
                 <div class="card admin-card">
@@ -257,41 +310,59 @@ $reports = $reportsStmt->fetchAll();
                                 </thead>
                                 <tbody>
                                     <?php foreach ($reports as $report):
-                                        $status = $report['status'] ?? 'pending';
-                                        $badge = match (strtolower($status)) {
-                                            'inprogress' => 'status-progress',
-                                            'resolved'   => 'status-resolved',
-                                            default      => 'status-open'
+                                        $status = strtolower($report['status'] ?? 'pending');
+
+                                        // Class untuk status badge
+                                        $statusClass = match ($status) {
+                                            'in_progress' => 'status-progress',
+                                            'resolved'    => 'status-resolved',
+                                            'open'        => 'status-open',
+                                            default       => 'status-open'
                                         };
-                                        $badgeText = ucwords(str_replace('_', ' ', $status));
+
+                                        // Nama cantik untuk paparan
+                                        $statusDisplay = ucwords(str_replace('_', ' ', $status));
+
+                                        // Priority badge class
                                         $priorityClass = match (strtolower($report['priority'])) {
-                                            'high'   => 'bg-danger',
-                                            'medium' => 'bg-warning',
-                                            'low'    => 'bg-success',
+                                            'high'   => 'urgency-high',
+                                            'medium' => 'urgency-medium',
+                                            'low'    => 'urgency-low',
                                             default  => 'bg-secondary'
                                         };
                                     ?>
                                         <tr>
-                                            <td>#<?= htmlspecialchars($report['report_id']) ?></td>
+                                            <td class="fw-bold">#<?= htmlspecialchars($report['report_id']) ?></td>
                                             <td><?= htmlspecialchars($report['title']) ?></td>
                                             <td><?= htmlspecialchars($report['category']) ?></td>
-                                            <td><span class="badge <?= $priorityClass ?>"><?= ucfirst($report['priority']) ?></span></td>
-                                            <td><span class="status-badge <?= $badge ?>"><?= $badgeText ?></span></td>
-                                            <td><?= htmlspecialchars($report['reported_by']) ?></td>
-                                            <td><?= $report['created_date'] ?></td>
                                             <td>
-                                                <?php if (strtolower($report['status'] ?? '') === 'open' || strtolower($report['status'] ?? '') === 'inprogress' || strtolower($report['status'] ?? '') === 'resolved'|| strtolower($report['status'] ?? '') === 'archive'): ?>
+                                                <span class="badge <?= $priorityClass ?>">
+                                                    <?= ucfirst($report['priority']) ?>
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <span class="status-badge <?= $statusClass ?>">
+                                                    <?= $statusDisplay ?>
+                                                </span>
+                                            </td>
+                                            <td><?= htmlspecialchars($report['reported_by']) ?></td>
+                                            <td><?= htmlspecialchars($report['created_date']) ?></td>
+                                            <td>
+                                                <?php if (in_array($status, ['open', 'in_progress', 'resolved', 'archive'])): ?>
                                                     <a href="viewReport.php?id=<?= $report['report_id'] ?>" class="btn btn-sm btn-outline-secondary">View</a>
                                                 <?php else: ?>
                                                     <a href="viewReport.php?id=<?= $report['report_id'] ?>&open=1" class="btn btn-sm btn-outline-primary">Open</a>
                                                 <?php endif; ?>
                                             </td>
-
                                         </tr>
                                     <?php endforeach; ?>
                                 </tbody>
-
                             </table>
+                        </div>
+                        <div class="text-end mt-3">
+                            <a href="allReports.php" class="btn btn-outline-primary">
+                                View All Reports <i class="bi bi-arrow-right-circle ms-1"></i>
+                            </a>
                         </div>
                     </div>
                 </div>
@@ -299,7 +370,71 @@ $reports = $reportsStmt->fetchAll();
         </div>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    
-</body>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
+    <script>
+        const ctx = document.getElementById('categoryChart').getContext('2d');
+
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: <?= json_encode($categories) ?>,
+                datasets: [{
+                    label: 'Total Reports',
+                    data: <?= json_encode($totals) ?>,
+                    backgroundColor: [
+                        '#4e73df',
+                        '#1cc88a',
+                        '#36b9cc',
+                        '#f6c23e',
+                        '#e74a3b',
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1
+                        }
+                    }
+                }
+            }
+        });
+    </script>
+
+    <script>
+        const ctxResolution = document.getElementById('resolutionChart').getContext('2d');
+
+        new Chart(ctxResolution, {
+            type: 'bar',
+            data: {
+                labels: <?= json_encode($resolutionLabels) ?>,
+                datasets: [{
+                    label: 'Avg Resolution Time (Hours)',
+                    data: <?= json_encode($resolutionHours) ?>,
+                    backgroundColor: '#36b9cc',
+                    borderColor: '#2c9faf',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Hours'
+                        }
+                    }
+                }
+            }
+        });
+    </script>
+
+</body>
 </html>

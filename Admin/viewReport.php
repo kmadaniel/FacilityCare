@@ -43,6 +43,11 @@
                                 <i class="bi bi-archive"></i> Archived
                             </a>
                         </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="allTechnician.php">
+                                <i class="bi bi-people"></i> Technicians
+                            </a>
+                        </li>
                     </ul>
                     <hr class="text-white-50">
                     <div class="dropdown">

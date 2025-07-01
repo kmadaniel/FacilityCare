@@ -1,5 +1,6 @@
 <?php
 require_once '../backend/process_allReports.php';
+
 if (isset($_GET['archive']) && is_numeric($_GET['archive']) && isset($_SESSION['user_id'])) {
     $archiveId = (int)$_GET['archive'];
 
@@ -19,8 +20,25 @@ if (isset($_GET['archive']) && is_numeric($_GET['archive']) && isset($_SESSION['
     exit();
 }
 
-?>
+if (isset($_GET['archive'])) {
+    require_once '../connection.php';
+    $reportId = $_GET['archive'];
 
+    $stmt = $pdo->prepare("UPDATE report SET archive = 1 WHERE report_id = ?");
+    $stmt->execute([$reportId]);
+
+    // Optional: Log
+    $logStmt = $pdo->prepare("
+        INSERT INTO statuslog (report_id, status, notes, timestamp, changed_by)
+        VALUES (?, 'archive', 'Archived by user', NOW(), ?)
+    ");
+    $logStmt->execute([$reportId, $_SESSION['user_id'] ?? 'system']);
+
+    header("Location: process_archived.php?success=1");
+    exit();
+}
+
+?>
 
 <!DOCTYPE html>
 <html lang="en">
@@ -108,8 +126,9 @@ if (isset($_GET['archive']) && is_numeric($_GET['archive']) && isset($_SESSION['
                                 <label for="statusFilter" class="form-label">Status</label>
                                 <select id="statusFilter" name="status" class="form-select">
                                     <option value="">All Statuses</option>
+                                    <option value="pending" <?= (isset($_GET['status']) && $_GET['status'] == 'pending') ? 'selected' : '' ?>>Pending</option>
                                     <option value="open" <?= (isset($_GET['status']) && $_GET['status'] == 'open') ? 'selected' : '' ?>>Open</option>
-                                    <option value="inprogress" <?= (isset($_GET['status']) && $_GET['status'] == 'inprogress') ? 'selected' : '' ?>>In Progress</option>
+                                    <option value="in_progress" <?= (isset($_GET['status']) && $_GET['status'] == 'in_progress') ? 'selected' : '' ?>>In Progress</option>
                                     <option value="resolved" <?= (isset($_GET['status']) && $_GET['status'] == 'resolved') ? 'selected' : '' ?>>Resolved</option>
                                 </select>
                             </div>
@@ -212,6 +231,14 @@ if (isset($_GET['archive']) && is_numeric($_GET['archive']) && isset($_SESSION['
                                 </thead>
                                 <tbody>
                                     <?php foreach ($reports as $report): ?>
+                                        <?php
+                                        $statusClass = match (strtolower($report['status'])) {
+                                            'in_progress' => 'progress',
+                                            'resolved'    => 'resolved',
+                                            'open'        => 'open',
+                                            default       => 'open'
+                                        };
+                                        ?>
                                         <tr class="report-row">
                                             <td class="fw-bold">#<?= htmlspecialchars($report['report_id']) ?></td>
                                             <td><?= htmlspecialchars($report['title']) ?></td>
@@ -222,8 +249,8 @@ if (isset($_GET['archive']) && is_numeric($_GET['archive']) && isset($_SESSION['
                                                 </span>
                                             </td>
                                             <td>
-                                                <span class="status-badge status-<?= strtolower($report['status']) ?>">
-                                                    <?= ucfirst($report['status']) ?>
+                                                <span class="status-badge status-<?= $statusClass ?>">
+                                                    <?= ucwords(str_replace('_', ' ', strtolower($report['status']))) ?>
                                                 </span>
                                             </td>
                                             <td>
@@ -293,7 +320,7 @@ if (isset($_GET['archive']) && is_numeric($_GET['archive']) && isset($_SESSION['
                 </div>
                 <div class="modal-footer justify-content-center">
                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <a href="#" id="confirmArchiveBtn" class="btn text-white" style="background-color: #95AEF1;">Yes, Archive</a>
+                    <a href="" id="confirmArchiveBtn" class="btn text-white" style="background-color: #95AEF1;">Yes, Archive</a>
                 </div>
             </div>
         </div>
