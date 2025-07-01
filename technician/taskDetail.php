@@ -204,7 +204,7 @@ $statusHistory = $stmt->fetchAll();
 
                                 <?php if ($adminNote): ?>
                                     <div class="mb-4">
-                                        <h6 class="mb-3"><i class="fas fa-comment me-2"></i> Admin Notes</h6>
+                                        <h6 class="mb-3"><i class="fas fa-comment me-2"></i>Notes</h6>
                                         <div class="card bg-light mb-3">
                                             <div class="card-body">
                                                 <div class="d-flex justify-content-between mb-2">
