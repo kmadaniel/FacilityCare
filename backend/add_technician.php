@@ -35,8 +35,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_FILES['profile_photo']) && $_FILES['profile_photo']['error'] === UPLOAD_ERR_OK) {
         $ext = pathinfo($_FILES['profile_photo']['name'], PATHINFO_EXTENSION);
         $photoFileName = $userId . '.' . $ext;
-        $profilePhoto = 'image/tech_profile/' . $photoFileName;
-        $targetDirectory = __DIR__ . '/../image/tech_profile/';
+        $profilePhoto = 'images/tech_profile/' . $photoFileName;
+        $targetDirectory = __DIR__ . '/../images/tech_profile/';
         if (!is_dir($targetDirectory)) {
             mkdir($targetDirectory, 0777, true);
         }

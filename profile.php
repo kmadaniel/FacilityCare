@@ -30,7 +30,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
       $profilePic = $user['profile_pic']; // Keep existing if no new upload
 
       if (isset($_FILES['profile_pic']) && $_FILES['profile_pic']['error'] == UPLOAD_ERR_OK) {
-        $uploadDir = 'uploads/profile_pics/';
+        $uploadDir = 'images/staff_profile/';
         if (!file_exists($uploadDir)) {
           mkdir($uploadDir, 0777, true);
         }
@@ -57,6 +57,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
       // Update user data
       if (!empty($password)) {
+        if (strlen($password) < 8) {
+          $_SESSION['password_error'] = "Password must be at least 8 characters";
+          header("Location: profileTech.php");
+          exit();
+        }
         $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
         $stmt = $pdo->prepare("UPDATE User SET name = ?, email = ?, phone = ?, password = ?, profile_pic = ? WHERE user_id = ?");
         $stmt->execute([$name, $email, $phone, $hashedPassword, $profilePic, $userId]);
@@ -149,7 +154,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
   <!-- Navbar -->
   <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
     <div class="container">
-      <a class="navbar-brand fw-bold" href="index.php">
+      <a class="navbar-brand fw-bold" href="homepage.php">
         <i class="fas fa-tools me-2 text-primary"></i>FacilityCare
       </a>
       <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
@@ -158,7 +163,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
       <div class="collapse navbar-collapse" id="navbarNav">
         <ul class="navbar-nav ms-auto">
           <li class="nav-item">
-            <a class="nav-link" href="index.php"><i class="fas fa-home me-1"></i> Home</a>
+            <a class="nav-link" href="homepage.php"><i class="fas fa-home me-1"></i> Home</a>
           </li>
           <li class="nav-item">
             <a class="nav-link" href="newReport.php"><i class="fas fa-plus-circle me-1"></i> New Report</a>
@@ -263,10 +268,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     </div>
 
                     <div class="mb-3">
-                      <label for="password" class="form-label"><i class="fas fa-lock text-muted me-2"></i>Change Password</label>
+                      <label for="password" class="form-label"><i class="fas fa-lock me-2"></i>Change Password</label>
                       <input type="password" class="form-control" id="password" name="password"
-                        placeholder="Leave blank to keep current password">
+                        placeholder="Leave blank to keep current password"
+                        minlength="8" pattern=".{8,}">
                       <small class="text-muted">Minimum 8 characters</small>
+                      <small class="text-danger d-block">
+                        <?= $_SESSION['password_error'] ?? '' ?>
+                      </small>
                     </div>
                   </div>
                 </div>
@@ -290,7 +299,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
       <p class="mb-0">&copy; 2025 FacilityCare. All rights reserved.</p>
     </div>
   </footer>
-  
+
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
   <script>
@@ -303,6 +312,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
           document.getElementById('profile-pic-preview').src = event.target.result;
         }
         reader.readAsDataURL(file);
+      }
+    });
+
+    document.getElementById('password').addEventListener('input', function(e) {
+      if (e.target.value.length > 0 && e.target.value.length < 8) {
+        e.target.setCustomValidity('Password must be at least 8 characters');
+      } else {
+        e.target.setCustomValidity('');
       }
     });
   </script>

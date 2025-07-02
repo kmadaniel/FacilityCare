@@ -295,7 +295,7 @@ $technicians = $pdo->query("
                                         $jobPercent = $maxJobs > 0 ? ($assignedJobs / $maxJobs) * 100 : 0;
                                         $progressBarClass = $assignedJobs == 0 ? 'bg-secondary' : ($jobPercent < 50 ? 'bg-success' : 'bg-warning');
                                         $statusClass = strtolower($tech['technician_status']) === 'active' ? 'status-active' : 'status-inactive';
-                                        $photoPath = !empty($tech['profile_photo']) ? '../' . $tech['profile_photo'] : '../image/tech_profile/default-avatar.png';
+                                        $photoPath = !empty($tech['profile_photo']) ? '../' . $tech['profile_photo'] : '../images/tech_profile/default-avatar.png';
                                     ?>
                                         <tr>
                                             <td>#<?= 1 + $index ?></td>

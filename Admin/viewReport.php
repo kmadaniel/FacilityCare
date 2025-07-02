@@ -204,6 +204,22 @@
                                             <?php endforeach; ?>
                                         </div>
                                     <?php endif; ?>
+
+                                    <!-- TEXT FILES -->
+                                    <h6 class="mb-3"><i class="bi bi-file-earmark-text me-2"></i> Generated Text Files from Staff's Uploaded Media (Transcripts / Summaries)</h6>
+
+                                    <?php if (empty($textFiles)): ?>
+                                        <p class="text-muted">No text files available.</p>
+                                    <?php else: ?>
+                                        <?php foreach ($textFiles as $text): ?>
+                                            <div class="card mb-3">
+                                                <div class="card-header"><?= htmlspecialchars($text['type']) ?></div>
+                                                <div class="card-body">
+                                                    <pre class="mb-0" style="white-space: pre-wrap;"><?= htmlspecialchars($text['content']) ?></pre>
+                                                </div>
+                                            </div>
+                                        <?php endforeach; ?>
+                                    <?php endif; ?>
                                 </div>
                             </div>
                         </div>

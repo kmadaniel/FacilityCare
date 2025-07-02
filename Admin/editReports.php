@@ -84,6 +84,30 @@ if (!empty($report['latest_status'])) {
     $report['latest_status'] = 'open';
 }
 
+$textFiles = [];
+
+foreach ($mediaFiles as $media) {
+    $filename = pathinfo($media['file_path'], PATHINFO_FILENAME);
+
+    $transcriptFile = __DIR__ . "/../backend/uploads/{$filename}_transcript.txt";
+    $summaryFile = __DIR__ . "/../backend/uploads/{$filename}_summary.txt";
+
+    if (file_exists($transcriptFile)) {
+        $textFiles[] = [
+            'type' => 'Transcript',
+            'filename' => basename($transcriptFile),
+            'content' => file_get_contents($transcriptFile)
+        ];
+    }
+
+    if (file_exists($summaryFile)) {
+        $textFiles[] = [
+            'type' => 'Summary',
+            'filename' => basename($summaryFile),
+            'content' => file_get_contents($summaryFile)
+        ];
+    }
+}
 ?>
 
 <!DOCTYPE html>
@@ -300,6 +324,24 @@ if (!empty($report['latest_status'])) {
                                                 <?php endforeach; ?>
                                             </div>
                                         <?php endif; ?>
+                                        
+                                        <div class="mt-4">
+                                            <h6 class="mb-3"><i class="bi bi-file-earmark-text me-2"></i> Generated Text Files from Staff's Uploaded Media (Transcripts / Summaries)</h6>
+
+                                            <?php if (empty($textFiles)): ?>
+                                                <p class="text-muted">No text files available.</p>
+                                            <?php else: ?>
+                                                <?php foreach ($textFiles as $file): ?>
+                                                    <div class="card mb-3">
+                                                        <div class="card-header"><?= htmlspecialchars($file['type']) ?></div>
+                                                        <div class="card-body">
+                                                            <pre class="mb-0" style="white-space: pre-wrap;"><?= htmlspecialchars($file['content']) ?></pre>
+                                                        </div>
+                                                    </div>
+                                                <?php endforeach; ?>
+                                            <?php endif; ?>
+                                        </div>
+
                                     </div>
 
                                     <!-- <button class="btn btn-primary">Save Changes</button> -->
@@ -350,7 +392,7 @@ if (!empty($report['latest_status'])) {
                                                 <option value="">-- Select Technician --</option>
                                                 <?php
                                                 // Dapatkan speciality_id dari nama category report
-                                                $specStmt = $pdo->prepare("SELECT speciality_id FROM speciality WHERE speciality_name = ?");
+                                                $specStmt = $pdo->prepare("SELECT speciality_id FROM speciality WHERE LOWER(speciality_name) = LOWER(?)");
                                                 $specStmt->execute([$report['category']]);
                                                 $speciality = $specStmt->fetch();
                                                 $specialityId = $speciality['speciality_id'] ?? null;
@@ -361,7 +403,10 @@ if (!empty($report['latest_status'])) {
                                                         SELECT u.user_id, u.name, u.role 
                                                         FROM user u
                                                         JOIN technician_speciality ts ON ts.technician_id = u.user_id
-                                                        WHERE u.position = 'technician' AND ts.speciality_id = ?
+                                                        JOIN technician t ON t.technician_id = u.user_id
+                                                        WHERE u.position = 'technician'
+                                                        AND ts.speciality_id = ?
+                                                        AND t.technician_status = 'active'
                                                     ");
                                                     $techStmt->execute([$specialityId]);
 

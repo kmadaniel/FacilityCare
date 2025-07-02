@@ -88,6 +88,33 @@ $mediaFiles = $mediaStmt->fetchAll();
 $staffMedia = array_filter($mediaFiles, fn($m) => $m['uploaded_by_role'] === 'staff');
 $technicianMedia = array_filter($mediaFiles, fn($m) => $m['uploaded_by_role'] === 'technician');
 
+$textFiles = [];
+
+foreach ($mediaFiles as $media) {
+    $ext = strtolower(pathinfo($media['file_path'], PATHINFO_EXTENSION));
+    if ($ext === 'mp4' || $ext === 'mov') { // kalau media tu video
+        $filename = pathinfo($media['file_path'], PATHINFO_FILENAME);
+        $transcriptPath = __DIR__ . "/../backend/uploads/{$filename}_transcript.txt";
+        $summaryPath    = __DIR__ . "/../backend/uploads/{$filename}_summary.txt";
+
+        if (file_exists($transcriptPath)) {
+            $textFiles[] = [
+                'type' => 'Transcript',
+                'path' => $transcriptPath,
+                'content' => file_get_contents($transcriptPath)
+            ];
+        }
+
+        if (file_exists($summaryPath)) {
+            $textFiles[] = [
+                'type' => 'Summary',
+                'path' => $summaryPath,
+                'content' => file_get_contents($summaryPath)
+            ];
+        }
+    }
+}
+
 // Fetch current status
 $statusStmt = $pdo->prepare("
     SELECT status, notes, changed_by, timestamp 

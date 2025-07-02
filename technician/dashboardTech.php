@@ -35,8 +35,7 @@ $stmt = $pdo->prepare("
     SELECT COUNT(*) FROM report 
     INNER JOIN statuslog ON report.report_id = statuslog.report_id 
     WHERE report.technician_id = ? 
-    AND statuslog.status = 'completed'
-    AND DATE(statuslog.timestamp) = CURDATE()
+    AND statuslog.status = 'resolved'
     AND statuslog.timestamp = (
         SELECT MAX(s2.timestamp) 
         FROM statuslog s2 
@@ -115,7 +114,7 @@ $assignments = $stmt->fetchAll();
                             <strong> <?php echo isset($_SESSION['name']) ? htmlspecialchars($_SESSION['name']) : 'Technician User'; ?></strong>
                         </a>
                         <ul class="dropdown-menu dropdown-menu-dark text-small shadow">
-                            <li><a class="dropdown-item" href="#"><i class="bi bi-person me-2"></i>Profile</a></li>
+                            <li><a class="dropdown-item" href="profileTech.php"><i class="bi bi-person me-2"></i>Profile</a></li>
                             <li>
                                 <hr class="dropdown-divider">
                             </li>
@@ -173,7 +172,7 @@ $assignments = $stmt->fetchAll();
                             <div class="card-body">
                                 <div class="d-flex justify-content-between">
                                     <div>
-                                        <h6 class="text-muted mb-2">Completed Today</h6>
+                                        <h6 class="text-muted mb-2">Resolved</h6>
                                         <h3 class="mb-0"><?= $completedToday ?></h3>
                                     </div>
                                     <div style="color: var(--tech-accent);">
