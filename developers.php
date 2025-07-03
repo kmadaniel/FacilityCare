@@ -247,7 +247,7 @@ require_once 'connection.php';
                             </div>
 
                             <div class="text-center mt-3">
-                                <a href="pdf/ainun_resume.pdf" class="btn btn-primary" download>
+                                <a href="pdf/ResumeNadia.pdf" class="btn btn-primary" download>
                                     <i class="fas fa-download me-2"></i>Download Resume
                                 </a>
                             </div>
