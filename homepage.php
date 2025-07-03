@@ -38,6 +38,9 @@ if (!isset($_SESSION['user_id'])) {
                     <li class="nav-item">
                         <a class="nav-link active" href="reportListings.php"><i class="fas fa-list me-1"></i> My Reports</a>
                     </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="developers.php"><i class="fas fa-user-cog me-1"></i> About Us</a>
+                    </li>
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
                             <i class="fas fa-user-circle me-1"></i>

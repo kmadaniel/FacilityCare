@@ -107,6 +107,9 @@ require_once 'connection.php';
                     <li class="nav-item">
                         <a class="nav-link" href="reportListings.php"><i class="fas fa-list me-1"></i> My Reports</a>
                     </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="developers.php"><i class="fas fa-user-cog me-1"></i> About Us</a>
+                    </li>
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
                             <i class="fas fa-user-circle me-1"></i>
@@ -133,6 +136,13 @@ require_once 'connection.php';
                     <i class="fas fa-arrow-left me-1"></i>Back to Home
                 </a>
             </div>
+
+            <!-- Intro paragraph starts here -->
+            <p class="mb-4 text-muted">
+                Meet our passionate and skilled development team behind the <strong>FacilityCare</strong> system.
+                We are a group of dedicated students committed to building a system that improves maintenance reporting
+                and technician coordination with ease, efficiency, and clarity.
+            </p>
 
             <div class="row">
                 <!-- Developer 1 -->
@@ -240,7 +250,7 @@ require_once 'connection.php';
                                 <h6 class="mb-2"><i class="fas fa-cogs me-2 text-primary"></i>Skills</h6>
                                 <div>
                                     <span class="skill-badge">PHP</span>
-                                    <span class="skill-badge">Laravel</span>
+                                    <span class="skill-badge">PostgreSQL</span>
                                     <span class="skill-badge">MySQL</span>
                                     <span class="skill-badge">JavaScript</span>
                                 </div>
