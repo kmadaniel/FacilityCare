@@ -45,7 +45,12 @@
                         </li>
                         <li class="nav-item">
                             <a class="nav-link" href="allTechnician.php">
-                                <i class="bi bi-people"></i> Technicians
+                                <i class="fas fa-users me-2"></i> Technician Management
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="allStaff.php">
+                                <i class="fas fa-user-tie me-2"></i> Staff Management
                             </a>
                         </li>
                     </ul>
@@ -55,7 +60,7 @@
                             <strong> <?php echo isset($_SESSION['name']) ? htmlspecialchars($_SESSION['name']) : 'Staff User'; ?></strong>
                         </a>
                         <ul class="dropdown-menu dropdown-menu-dark text-small shadow">
-                            <li><a class="dropdown-item" href="#"><i class="bi bi-person me-2"></i>Profile</a></li>
+                            <li><a class="dropdown-item" href="adminProfile.php"><i class="bi bi-person me-2"></i>Profile</a></li>
                             <li>
                                 <hr class="dropdown-divider">
                             </li>
@@ -122,12 +127,18 @@
                                     <div class="col-md-6">
                                         <h6 class="mb-2"><i class="bi bi-person me-2"></i> Reported By</h6>
                                         <div class="d-flex align-items-center">
-                                            <img src="https://via.placeholder.com/40" class="rounded-circle me-2" width="40" height="40" hidden>
+                                            <?php
+                                            $profilePicPath = !empty($report['reporter_pic'])
+                                                ? '../images/staff_profile/' . basename($report['reporter_pic'])
+                                                : '../images/staff_profile/default-avatar.png';
+                                            ?>
+                                            <img src="<?= htmlspecialchars($profilePicPath) ?>" class="rounded-circle me-2" width="40" height="40" alt="Profile Picture">
                                             <div>
                                                 <p class="mb-0"><?= htmlspecialchars($report['reporter_name']) ?></p>
                                                 <small class="text-muted"><?= htmlspecialchars($report['reporter_email']) ?></small>
                                             </div>
                                         </div>
+
                                     </div>
                                 </div>
 
@@ -281,16 +292,20 @@
 
                                 <div class="mb-4">
                                     <h6 class="mb-3">Update Status</h6>
-                                    <div class="d-grid gap-2">
-                                        <button class="btn btn-success">
-                                            <i class="bi bi-check-circle me-1"></i> Mark as Resolved
-                                        </button>
-                                        <button class="btn btn-outline-secondary">
-                                            <i class="bi bi-archive me-1"></i> Archive Report
-                                        </button>
-                                    </div>
-                                </div>
+                                    <form method="post" action="viewReport.php?id=<?= $report['report_id'] ?>">
+                                        <input type="hidden" name="update_status" value="1">
+                                        <input type="hidden" name="report_id" value="<?= $report['report_id'] ?>">
 
+                                        <div class="d-grid gap-2">
+                                            <button class="btn btn-success" name="status" value="resolved" type="submit">
+                                                <i class="bi bi-check-circle me-1"></i> Mark as Resolved
+                                            </button>
+                                            <button class="btn btn-outline-secondary" name="status" value="archived" type="submit">
+                                                <i class="bi bi-archive me-1"></i> Archive Report
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
                                 <hr>
 
                                 <!-- comment_form.php -->

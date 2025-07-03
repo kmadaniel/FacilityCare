@@ -52,7 +52,12 @@ if (!isset($_SESSION['user_id'])) {
                         </li>
                         <li class="nav-item">
                             <a class="nav-link" href="allTechnician.php">
-                                <i class="bi bi-people"></i> Technicians
+                                <i class="fas fa-users me-2"></i> Technician Management
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="allStaff.php">
+                                <i class="fas fa-user-tie me-2"></i> Staff Management
                             </a>
                         </li>
                     </ul>
@@ -62,7 +67,7 @@ if (!isset($_SESSION['user_id'])) {
                             <strong> <?php echo isset($_SESSION['name']) ? htmlspecialchars($_SESSION['name']) : 'Staff User'; ?></strong>
                         </a>
                         <ul class="dropdown-menu dropdown-menu-dark text-small shadow">
-                            <li><a class="dropdown-item" href="#"><i class="bi bi-person me-2"></i>Profile</a></li>
+                            <li><a class="dropdown-item" href="adminProfile.php"><i class="bi bi-person me-2"></i>Profile</a></li>
                             <li>
                                 <hr class="dropdown-divider">
                             </li>
@@ -114,13 +119,26 @@ if (!isset($_SESSION['user_id'])) {
 
                             <div class="col-md-4">
                                 <label for="dateFilter" class="form-label">Archived Date</label>
-                                <select id="dateFilter" name="date" class="form-select">
+                                <select id="dateFilter" name="date" class="form-select" onchange="toggleCustomDateFields()">
                                     <option value="">All Time</option>
-                                    <option <?= isset($_GET['date']) && $_GET['date'] == 'today' ? 'selected' : '' ?>>Today</option>
-                                    <option <?= isset($_GET['date']) && $_GET['date'] == 'this_week' ? 'selected' : '' ?>>This Week</option>
-                                    <option <?= isset($_GET['date']) && $_GET['date'] == 'this_month' ? 'selected' : '' ?>>This Month</option>
-                                    <option <?= isset($_GET['date']) && $_GET['date'] == 'custom' ? 'selected' : '' ?>>Custom Range</option>
+                                    <option value="today" <?= (isset($_GET['date']) && $_GET['date'] == 'today') ? 'selected' : '' ?>>Today</option>
+                                    <option value="this_week" <?= (isset($_GET['date']) && $_GET['date'] == 'this_week') ? 'selected' : '' ?>>This Week</option>
+                                    <option value="this_month" <?= (isset($_GET['date']) && $_GET['date'] == 'this_month') ? 'selected' : '' ?>>This Month</option>
+                                    <option value="custom" <?= (isset($_GET['date']) && $_GET['date'] == 'custom') ? 'selected' : '' ?>>Custom Range</option>
                                 </select>
+
+                                <div class="row mt-2" id="customDateFields" style="display: none;">
+                                    <div class="col-md-6">
+                                        <label for="startDate" class="form-label">Start Date</label>
+                                        <input type="date" id="startDate" name="start_date" class="form-control"
+                                            value="<?= htmlspecialchars($_GET['start_date'] ?? '') ?>">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="endDate" class="form-label">End Date</label>
+                                        <input type="date" id="endDate" name="end_date" class="form-control"
+                                            value="<?= htmlspecialchars($_GET['end_date'] ?? '') ?>">
+                                    </div>
+                                </div>
                             </div>
 
                             <div class="col-12">
@@ -245,6 +263,21 @@ if (!isset($_SESSION['user_id'])) {
     </div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
+    <script>
+        function toggleCustomDateFields() {
+            const dateFilter = document.getElementById("dateFilter").value;
+            const customDateFields = document.getElementById("customDateFields");
+
+            if (dateFilter === "custom") {
+                customDateFields.style.display = "flex";
+            } else {
+                customDateFields.style.display = "none";
+            }
+        }
+
+        // Run this on page load (in case "custom" is pre-selected)
+        document.addEventListener("DOMContentLoaded", toggleCustomDateFields);
+    </script>
 </body>
 
 </html>

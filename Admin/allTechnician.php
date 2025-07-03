@@ -37,9 +37,9 @@ function getInProgressJobCount($pdo, $technicianId)
                 FROM statuslog
                 GROUP BY report_id
             ) s2 ON s1.report_id = s2.report_id AND s1.timestamp = s2.max_time
-            WHERE s1.status = 'in progress'
+            WHERE s1.status = 'in_progress'
         ) latest_status ON latest_status.report_id = r.report_id
-        WHERE r.technician_id = ?
+        WHERE r.technician_id = ? AND r.archive = 0
     ");
     $stmt->execute([$technicianId]);
     return $stmt->fetchColumn();
@@ -56,8 +56,52 @@ $technicians = $pdo->query("
     FROM user u
     JOIN technician t ON u.user_id = t.technician_id
 ")->fetchAll(PDO::FETCH_ASSOC);
-?>
 
+$statusFilter = $_GET['status'] ?? '';
+$specialtyFilter = $_GET['specialty'] ?? '';
+$searchQuery = $_GET['search'] ?? '';
+
+$sql = "
+    SELECT 
+        u.user_id,
+        u.name,
+        u.email,
+        t.phone_number,
+        t.technician_status,
+        t.profile_photo
+    FROM user u
+    JOIN technician t ON u.user_id = t.technician_id
+";
+
+$conditions = [];
+$params = [];
+
+if ($statusFilter !== '') {
+    $conditions[] = "t.technician_status = :status";
+    $params[':status'] = $statusFilter;
+}
+
+if ($searchQuery !== '') {
+    $conditions[] = "(u.name LIKE :search OR u.user_id LIKE :search OR u.email LIKE :search)";
+    $params[':search'] = '%' . $searchQuery . '%';
+}
+
+if (!empty($conditions)) {
+    $sql .= ' WHERE ' . implode(' AND ', $conditions);
+}
+
+$technicianStmt = $pdo->prepare($sql);
+$technicianStmt->execute($params);
+$technicians = $technicianStmt->fetchAll(PDO::FETCH_ASSOC);
+
+// Later filter specialty (since it's in another table)
+if ($specialtyFilter !== '') {
+    $technicians = array_filter($technicians, function ($tech) use ($pdo, $specialtyFilter) {
+        $specialties = getTechnicianSpecialties($pdo, $tech['user_id']);
+        return in_array($specialtyFilter, $specialties);
+    });
+}
+?>
 
 <!DOCTYPE html>
 <html lang="en">
@@ -137,7 +181,12 @@ $technicians = $pdo->query("
                         </li>
                         <li class="nav-item">
                             <a class="nav-link" href="allTechnician.php">
-                                <i class="bi bi-people"></i> Technicians
+                                <i class="fas fa-users me-2"></i> Technician Management
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="allStaff.php">
+                                <i class="fas fa-user-tie me-2"></i> Staff Management
                             </a>
                         </li>
                     </ul>
@@ -147,7 +196,7 @@ $technicians = $pdo->query("
                             <strong> <?php echo isset($_SESSION['name']) ? htmlspecialchars($_SESSION['name']) : 'Staff User'; ?></strong>
                         </a>
                         <ul class="dropdown-menu dropdown-menu-dark text-small shadow">
-                            <li><a class="dropdown-item" href="#"><i class="bi bi-person me-2"></i>Profile</a></li>
+                            <li><a class="dropdown-item" href="adminProfile.php"><i class="bi bi-person me-2"></i>Profile</a></li>
                             <li>
                                 <hr class="dropdown-divider">
                             </li>
@@ -162,9 +211,9 @@ $technicians = $pdo->query("
                 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
                     <h1 class="h2">Technicians Management</h1>
                     <div class="btn-toolbar mb-2 mb-md-0">
-                        <button class="btn btn-sm btn-outline-secondary me-2" data-bs-toggle="modal" data-bs-target="#exportModal">
+                        <!-- <button class="btn btn-sm btn-outline-secondary me-2" data-bs-toggle="modal" data-bs-target="#exportModal">
                             <i class="bi bi-download me-1"></i> Export
-                        </button>
+                        </button> -->
                         <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addTechModal">
                             <i class="bi bi-plus-lg me-1"></i> Add Technician
                         </button>
@@ -234,33 +283,34 @@ $technicians = $pdo->query("
                         </div>
                     </div>
                 </form>
+
                 <!-- Filters Card -->
                 <div class="card filter-card mb-4">
                     <div class="card-body">
-                        <form class="row g-3">
+                        <form class="row g-3" method="GET" action="">
                             <div class="col-md-4">
                                 <label class="form-label">Status</label>
-                                <select class="form-select">
-                                    <option selected>All Statuses</option>
-                                    <option>Active</option>
-                                    <option>Inactive</option>
+                                <select class="form-select" name="status">
+                                    <option value="" <?= (!isset($_GET['status']) || $_GET['status'] === '') ? 'selected' : '' ?>>All Statuses</option>
+                                    <option value="active" <?= (isset($_GET['status']) && $_GET['status'] === 'active') ? 'selected' : '' ?>>Active</option>
+                                    <option value="inactive" <?= (isset($_GET['status']) && $_GET['status'] === 'inactive') ? 'selected' : '' ?>>Inactive</option>
                                 </select>
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label">Specialty</label>
-                                <select class="form-select">
-                                    <option selected>All Specialties</option>
-                                    <option>Plumbing</option>
-                                    <option>Electrical</option>
-                                    <option>HVAC</option>
-                                    <option>Structural</option>
+                                <select class="form-select" name="specialty">
+                                    <option value="" <?= (!isset($_GET['specialty']) || $_GET['specialty'] === '') ? 'selected' : '' ?>>All Specialties</option>
+                                    <option value="Plumbing" <?= (isset($_GET['specialty']) && $_GET['specialty'] === 'Plumbing') ? 'selected' : '' ?>>Plumbing</option>
+                                    <option value="Electrical" <?= (isset($_GET['specialty']) && $_GET['specialty'] === 'Electrical') ? 'selected' : '' ?>>Electrical</option>
+                                    <option value="HVAC" <?= (isset($_GET['specialty']) && $_GET['specialty'] === 'HVAC') ? 'selected' : '' ?>>HVAC</option>
+                                    <option value="Structural" <?= (isset($_GET['specialty']) && $_GET['specialty'] === 'Structural') ? 'selected' : '' ?>>Structural</option>
                                 </select>
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label">Search</label>
                                 <div class="input-group">
-                                    <input type="text" class="form-control" placeholder="Search technicians...">
-                                    <button class="btn btn-outline-secondary" type="button">
+                                    <input type="text" name="search" class="form-control" placeholder="Search technicians..." value="<?= htmlspecialchars($_GET['search'] ?? '') ?>">
+                                    <button class="btn btn-outline-secondary" type="submit">
                                         <i class="bi bi-search"></i>
                                     </button>
                                 </div>
@@ -290,6 +340,8 @@ $technicians = $pdo->query("
                                     <?php foreach ($technicians as $index => $tech):
                                         $specialties = getTechnicianSpecialties($pdo, $tech['user_id']);
                                         $assignedJobs = getInProgressJobCount($pdo, $tech['user_id']);
+                                        echo "<!-- Technician: {$tech['user_id']}, In-Progress Jobs: {$assignedJobs} -->";
+
                                         $rating = 4.5; // Placeholder
                                         $maxJobs = 8;
                                         $jobPercent = $maxJobs > 0 ? ($assignedJobs / $maxJobs) * 100 : 0;
@@ -327,14 +379,17 @@ $technicians = $pdo->query("
                                                 <span class="badge <?= $statusClass ?>"><?= htmlspecialchars($tech['technician_status']) ?></span>
                                             </td>
                                             <td>
-                                                <div class="progress" style="height: 20px;">
-                                                    <div class="progress-bar <?= $progressBarClass ?>" role="progressbar"
-                                                        style="width: <?= $jobPercent ?>%;"
-                                                        aria-valuenow="<?= $assignedJobs ?>" aria-valuemin="0" aria-valuemax="<?= $maxJobs ?>">
-                                                        <?= $assignedJobs ?>/<?= $maxJobs ?>
+                                                <div class="d-flex flex-column">
+                                                    <small class="text-muted mb-1">Jobs: <?= $assignedJobs ?>/<?= $maxJobs ?></small>
+                                                    <div class="progress" style="height: 20px;">
+                                                        <div class="progress-bar <?= $progressBarClass ?>" role="progressbar"
+                                                            style="width: <?= min($jobPercent, 100) ?>%;"
+                                                            aria-valuenow="<?= $assignedJobs ?>" aria-valuemin="0" aria-valuemax="<?= $maxJobs ?>">
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </td>
+
                                             <td>
                                                 <!-- <div class="rating-star">
                                                     <?php for ($i = 1; $i <= 5; $i++): ?>
@@ -428,8 +483,7 @@ $technicians = $pdo->query("
 
                         <div class="mb-3">
                             <label class="form-label">Profile Photo</label>
-                            <input type="file" class="form-control" name="profile_photo" accept="image/*">
-                            <small class="text-muted">Current: <span id="current-photo-name" class="fw-semibold"></span></small>
+                            <img src="" id="tech-profile-preview" class="img-thumbnail mb-2" style="max-width: 150px;">
                         </div>
                     </div>
 
@@ -517,6 +571,14 @@ $technicians = $pdo->query("
             document.getElementById('edit-tech-phone').value = phone;
             document.getElementById('edit-tech-status').value = status;
             document.getElementById('current-photo-name').textContent = photo ?? 'None';
+        });
+
+        document.querySelectorAll('[data-bs-target="#editTechModal"]').forEach(button => {
+            button.addEventListener('click', function() {
+                const photo = this.getAttribute('data-photo');
+                document.getElementById('tech-profile-preview').src = photo;
+                // Jangan ubah value input file sebab dia disabled / tiada pun
+            });
         });
     </script>
 

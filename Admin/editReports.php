@@ -152,9 +152,14 @@ foreach ($mediaFiles as $media) {
                                 <i class="bi bi-archive"></i> Archived
                             </a>
                         </li>
-                        <li class="nav-item">
+                       <li class="nav-item">
                             <a class="nav-link" href="allTechnician.php">
-                                <i class="bi bi-people"></i> Technicians
+                                <i class="fas fa-users me-2"></i> Technician Management
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="allStaff.php">
+                                <i class="fas fa-user-tie me-2"></i> Staff Management
                             </a>
                         </li>
                     </ul>
@@ -164,7 +169,7 @@ foreach ($mediaFiles as $media) {
                             <strong> <?php echo isset($_SESSION['name']) ? htmlspecialchars($_SESSION['name']) : 'Staff User'; ?></strong>
                         </a>
                         <ul class="dropdown-menu dropdown-menu-dark text-small shadow">
-                            <li><a class="dropdown-item" href="#"><i class="bi bi-person me-2"></i>Profile</a></li>
+                            <li><a class="dropdown-item" href="adminProfile.php"><i class="bi bi-person me-2"></i>Profile</a></li>
                             <li>
                                 <hr class="dropdown-divider">
                             </li>

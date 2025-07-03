@@ -1,7 +1,18 @@
 <?php
-// developers.php
+session_name("staff_session");
 session_start();
 require_once 'connection.php';
+
+if (!isset($_SESSION['user_id'])) {
+    header("Location: homepage.php");
+    exit();
+}
+
+// Get user data from database
+$userId = $_SESSION['user_id'];
+$stmt = $pdo->prepare("SELECT * FROM User WHERE user_id = ?");
+$stmt->execute([$userId]);
+$user = $stmt->fetch();
 ?>
 
 <!DOCTYPE html>
@@ -265,9 +276,9 @@ require_once 'connection.php';
                             <div class="developer-detail">
                                 <h6 class="mb-2 mt-4"><i class="fas fa-share-alt me-2 text-primary"></i>Connect</h6>
                                 <div>
-                                    <a href="#" class="social-icon"><i class="fab fa-github"></i></a>
-                                    <a href="#" class="social-icon"><i class="fab fa-linkedin"></i></a>
-                                    <a href="#" class="social-icon"><i class="fab fa-dribbble"></i></a>
+                                    <a href="https://github.com/nndiaanuar" class="social-icon"><i class="fab fa-github"></i></a>
+                                    <a href="mailto:aainunnadia@gmail.com" class="social-icon"><i class="fas fa-envelope"></i></a>
+                                    <!-- <a href="#" class="social-icon"><i class="fab fa-dribbble"></i></a> -->
                                 </div>
                             </div>
                         </div>
@@ -278,7 +289,7 @@ require_once 'connection.php';
                 <div class="col-md-4">
                     <div class="developer-card p-4">
                         <div class="developer-img-container mb-3">
-                            <img src="images/team/developer2.jpg" class="developer-img" alt="Ikmal Daniel">
+                            <img src="images/developer4.jpg" class="developer-img" alt="Ikmal Daniel">
                         </div>
 
                         <div class="text-center">
@@ -300,7 +311,7 @@ require_once 'connection.php';
                             </div>
 
                             <div class="text-center mt-3">
-                                <a href="pdf/ainun_resume.pdf" class="btn btn-primary" download>
+                                <a href="pdf/RESUMETASYA.pdf" class="btn btn-primary" download>
                                     <i class="fas fa-download me-2"></i>Download Resume
                                 </a>
                             </div>
@@ -308,9 +319,7 @@ require_once 'connection.php';
                             <div class="developer-detail">
                                 <h6 class="mb-2 mt-4"><i class="fas fa-share-alt me-2 text-primary"></i>Connect</h6>
                                 <div>
-                                    <a href="#" class="social-icon"><i class="fab fa-github"></i></a>
-                                    <a href="#" class="social-icon"><i class="fab fa-linkedin"></i></a>
-                                    <a href="#" class="social-icon"><i class="fab fa-dribbble"></i></a>
+                                    <a href="mailto:ntsya298@gmail.com" class="social-icon"><i class="fas fa-envelope"></i></a>
                                 </div>
                             </div>
                         </div>

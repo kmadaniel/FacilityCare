@@ -157,7 +157,12 @@ foreach ($resolutionData as $row) {
                         </li>
                         <li class="nav-item">
                             <a class="nav-link" href="allTechnician.php">
-                                <i class="bi bi-people"></i> Technicians
+                                <i class="fas fa-users me-2"></i> Technician Management
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="allStaff.php">
+                                <i class="fas fa-user-tie me-2"></i> Staff Management
                             </a>
                         </li>
                     </ul>
@@ -167,7 +172,7 @@ foreach ($resolutionData as $row) {
                             <strong> <?php echo isset($_SESSION['name']) ? htmlspecialchars($_SESSION['name']) : 'Staff User'; ?></strong>
                         </a>
                         <ul class="dropdown-menu dropdown-menu-dark text-small shadow">
-                            <li><a class="dropdown-item" href="#"><i class="bi bi-person me-2"></i>Profile</a></li>
+                            <li><a class="dropdown-item" href="adminProfile.php"><i class="bi bi-person me-2"></i>Profile</a></li>
                             <li>
                                 <hr class="dropdown-divider">
                             </li>
@@ -185,9 +190,9 @@ foreach ($resolutionData as $row) {
                         <!-- <div class="btn-group me-2">
                             <button type="button" class="btn btn-sm btn-outline-secondary">Export</button>
                         </div> -->
-                        <button type="button" class="btn btn-sm btn-primary">
+                        <!-- <button type="button" class="btn btn-sm btn-primary">
                             <i class="bi bi-funnel me-1"></i> Filters
-                        </button>
+                        </button> -->
                     </div>
                 </div>
 

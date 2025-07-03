@@ -68,7 +68,7 @@ if (isset($_GET['open']) && $_GET['open'] == 1 && isset($_SESSION['user_id'])) {
 
 // Fetch report info
 $stmt = $pdo->prepare("
-    SELECT r.*, u.name AS reporter_name, u.email AS reporter_email, u.position
+    SELECT r.*, u.name AS reporter_name, u.email AS reporter_email, u.position, u.profile_pic AS reporter_pic
     FROM Report r
     JOIN User u ON r.user_id = u.user_id
     WHERE r.report_id = ?
@@ -142,9 +142,11 @@ $statusStmt = $pdo->prepare("
     SELECT status, timestamp 
     FROM statuslog 
     WHERE report_id = ? 
+      AND status != 'archived' 
     ORDER BY timestamp DESC 
     LIMIT 1
 ");
+
 $statusStmt->execute([$report['report_id']]);
 $latestStatusRow = $statusStmt->fetch();
 
@@ -158,5 +160,35 @@ $techStmt = $pdo->prepare("
 ");
 $techStmt->execute([$report['technician_id'] ?? '']);
 $technicianName = $techStmt->fetchColumn() ?? 'Not Assigned';
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_status'], $_POST['report_id'], $_POST['status'], $_SESSION['user_id'])) {
+    $report_id = $_POST['report_id'];
+    $status = $_POST['status'];
+    $user_id = $_SESSION['user_id'];
+
+    $note = '';
+    if ($status === 'resolved') {
+        $note = 'Report marked as resolved.';
+    } elseif ($status === 'archived') {
+        $note = 'Report archived by admin.';
+    }
+
+    // Masukkan ke statuslog
+    $stmt = $pdo->prepare("
+        INSERT INTO statuslog (report_id, status, notes, changed_by, timestamp)
+        VALUES (?, ?, ?, ?, NOW())
+    ");
+    $stmt->execute([$report_id, $status, $note, $user_id]);
+
+    // ✅ Update report table jika status adalah "archived"
+    if ($status === 'archived') {
+        $update = $pdo->prepare("UPDATE report SET archive = 1 WHERE report_id = ?");
+        $update->execute([$report_id]);
+    }
+
+    // Redirect to refresh page
+    header("Location: viewReport.php?id=" . $report_id);
+    exit();
+}
 
 ?>
