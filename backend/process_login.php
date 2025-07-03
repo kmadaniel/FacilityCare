@@ -40,7 +40,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 break;
             case 'S':
                 session_name("staff_session");
-                $redirect = "../index.php";
+                $redirect = "../homepage.php";
                 break;
             case 'T':
                 session_name("technician_session");
