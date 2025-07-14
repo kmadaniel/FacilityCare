@@ -21,7 +21,7 @@ if (!isset($_SESSION['technician_id'])) {
     exit();
 }
 
-// Ambil report details + reported by
+// Get report details + reported by
 $stmt = $pdo->prepare("
     SELECT r.*, u.name AS reported_by
     FROM report r
@@ -36,7 +36,7 @@ if (!$report) {
     exit();
 }
 
-// Dapatkan status terbaru
+// Get latest status
 $stmt = $pdo->prepare("
     SELECT * FROM statuslog 
     WHERE report_id = ?
@@ -45,14 +45,14 @@ $stmt = $pdo->prepare("
 $stmt->execute([$reportId]);
 $statusLog = $stmt->fetch();
 
-// Dapatkan gambar/media
+// Get media files
 $stmt = $pdo->prepare("SELECT file_path, uploaded_by_role FROM media WHERE report_id = ?");
 $stmt->execute([$reportId]);
 $mediaFiles = $stmt->fetchAll();
 $staffMedia = array_filter($mediaFiles, fn($m) => $m['uploaded_by_role'] === 'staff');
 $technicianMedia = array_filter($mediaFiles, fn($m) => $m['uploaded_by_role'] === 'technician');
 
-// Dapatkan admin notes (optional: guna `notes` dari statuslog yang paling latest ada isi)
+// Get admin notes
 $stmt = $pdo->prepare("
     SELECT changed_by, notes, timestamp 
     FROM statuslog 
@@ -62,7 +62,7 @@ $stmt = $pdo->prepare("
 $stmt->execute([$reportId]);
 $adminNote = $stmt->fetch();
 
-// Dapatkan semua statuslog (history)
+// Get status history
 $stmt = $pdo->prepare("
     SELECT sl.status, sl.notes, sl.timestamp, u.name AS changed_by, u.position AS changer_role
     FROM StatusLog sl
@@ -73,6 +73,7 @@ $stmt = $pdo->prepare("
 $stmt->execute([$reportId]);
 $statusHistory = $stmt->fetchAll();
 
+// Get timeline data
 $stmt = $pdo->prepare("
     SELECT
         MIN(CASE WHEN status = 'open' THEN timestamp END) AS open_time,
@@ -83,18 +84,51 @@ $stmt = $pdo->prepare("
 $stmt->execute([$reportId]);
 $times = $stmt->fetch(PDO::FETCH_ASSOC);
 
-$openTime = $times['open_time'];
-$resolvedTime = $times['resolved_time'];
+$startTime = !empty($times['open_time']) ? strtotime($times['open_time']) : null;
+$endTime = !empty($times['resolved_time']) ? strtotime($times['resolved_time']) : time();
 
-$start = strtotime($openTime);
-$end = $resolvedTime ? strtotime($resolvedTime) : time(); // Kalau belum selesai, guna waktu sekarang
+if ($startTime) {
+    $durationInSeconds = $endTime - $startTime;
 
-$seconds = $end - $start;
-$hours = floor($seconds / 3600);
-$minutes = floor(($seconds % 3600) / 60);
-$timeSpent = ($hours ? "{$hours}h " : '') . "{$minutes}m";
+    $days = floor($durationInSeconds / 86400);
+    $hours = floor(($durationInSeconds % 86400) / 3600);
+    $minutes = floor(($durationInSeconds % 3600) / 60);
 
-$priority = strtolower($report['priority']); // contoh: high, medium, low
+    $timeSpent = '';
+    if ($days > 0) $timeSpent .= "{$days}d ";
+    if ($hours > 0 || $days > 0) $timeSpent .= "{$hours}h ";
+    $timeSpent .= "{$minutes}m";
+} else {
+    $timeSpent = 'N/A';
+}
+
+$priority = strtolower($report['priority']);
+
+$textFiles = [];
+
+foreach ($staffMedia as $media) {
+    $filename = pathinfo($media['file_path'], PATHINFO_FILENAME);
+    $transcriptFile = __DIR__ . "/../backend/uploads/{$filename}_transcript.txt";
+    $summaryFile = __DIR__ . "/../backend/uploads/{$filename}_summary.txt";
+
+    if (file_exists($transcriptFile)) {
+        $textFiles[] = [
+            'type' => 'Transcript',
+            'filename' => basename($transcriptFile),
+            'content' => file_get_contents($transcriptFile),
+            'source' => 'staff'
+        ];
+    }
+
+    if (file_exists($summaryFile)) {
+        $textFiles[] = [
+            'type' => 'Summary',
+            'filename' => basename($summaryFile),
+            'content' => file_get_contents($summaryFile),
+            'source' => 'staff'
+        ];
+    }
+}
 ?>
 
 <!DOCTYPE html>
@@ -261,6 +295,27 @@ $priority = strtolower($report['priority']); // contoh: high, medium, low
                                     <?php endif; ?>
                                 </div>
 
+                                <!-- Add this new section for text files -->
+                                <div class="mt-4">
+                                    <h6 class="mb-3"><i class="fas fa-file-alt me-2"></i> Generated Text Files from Staff's Uploaded Media</h6>
+
+                                    <?php if (empty($textFiles)): ?>
+                                        <p class="text-muted">No text files available.</p>
+                                    <?php else: ?>
+                                        <?php foreach ($textFiles as $file): ?>
+                                            <div class="card mb-3">
+                                                <div class="card-header d-flex justify-content-between">
+                                                    <span><?= htmlspecialchars($file['type']) ?></span>
+                                                    <small class="text-muted">From staff media</small>
+                                                </div>
+                                                <div class="card-body">
+                                                    <pre class="mb-0" style="white-space: pre-wrap;"><?= htmlspecialchars($file['content']) ?></pre>
+                                                </div>
+                                            </div>
+                                        <?php endforeach; ?>
+                                    <?php endif; ?>
+                                </div>
+
                                 <?php if ($adminNote): ?>
                                     <div class="mb-4">
                                         <h6 class="mb-3"><i class="fas fa-comment me-2"></i>Notes</h6>
@@ -306,7 +361,7 @@ $priority = strtolower($report['priority']); // contoh: high, medium, low
                                                 <?php if (!empty($log['notes'])): ?>
                                                     <p class="mb-0 text-muted"><?= htmlspecialchars($log['notes']) ?></p>
                                                 <?php endif; ?>
-                                                 <small class="text-muted">Updated by: <?= htmlspecialchars($log['changed_by']) ?></small>
+                                                <small class="text-muted">Updated by: <?= htmlspecialchars($log['changed_by']) ?></small>
                                             </div>
                                         <?php endforeach; ?>
                                     <?php endif; ?>
@@ -378,7 +433,9 @@ $priority = strtolower($report['priority']); // contoh: high, medium, low
                                         </li>
                                         <li class="list-group-item px-0 d-flex justify-content-between">
                                             <span>Created:</span>
-                                            <span><?= date('j M Y, g:i A', strtotime($openTime)) ?></span>
+                                            <span>
+                                                <?= !empty($times['open_time']) ? date('j M Y, g:i A', strtotime($times['open_time'])) : 'N/A' ?>
+                                            </span>
                                         </li>
                                     </ul>
                                 </div>
@@ -386,24 +443,24 @@ $priority = strtolower($report['priority']); // contoh: high, medium, low
                         </div>
 
                         <!-- <div class="card">
-                    <div class="card-body">
-                        <h5 class="card-title mb-3"><i class="fas fa-toolbox me-2"></i> Required Tools</h5>
-                        <ul class="list-group list-group-flush">
-                            <li class="list-group-item px-0 d-flex justify-content-between">
-                                <span>Pipe Wrench</span>
-                                <span class="badge bg-success">Available</span>
-                            </li>
-                            <li class="list-group-item px-0 d-flex justify-content-between">
-                                <span>Teflon Tape</span>
-                                <span class="badge bg-success">Available</span>
-                            </li>
-                            <li class="list-group-item px-0 d-flex justify-content-between">
-                                <span>Replacement Washers</span>
-                                <span class="badge bg-warning">Low Stock</span>
-                            </li>
-                        </ul>
-                    </div>
-                </div> -->
+                        <div class="card-body">
+                            <h5 class="card-title mb-3"><i class="fas fa-toolbox me-2"></i> Required Tools</h5>
+                            <ul class="list-group list-group-flush">
+                                <li class="list-group-item px-0 d-flex justify-content-between">
+                                    <span>Pipe Wrench</span>
+                                    <span class="badge bg-success">Available</span>
+                                </li>
+                                <li class="list-group-item px-0 d-flex justify-content-between">
+                                    <span>Teflon Tape</span>
+                                    <span class="badge bg-success">Available</span>
+                                </li>
+                                <li class="list-group-item px-0 d-flex justify-content-between">
+                                    <span>Replacement Washers</span>
+                                    <span class="badge bg-warning">Low Stock</span>
+                                </li>
+                            </ul>
+                        </div>
+                    </div> -->
                     </div>
                 </div>
             </main>

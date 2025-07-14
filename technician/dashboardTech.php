@@ -228,7 +228,7 @@ $assignments = $stmt->fetchAll();
                 </div>
 
                 <!-- Quick Actions -->
-                <div class="card tech-card">
+                <!-- <div class="card tech-card">
                     <div class="card-header">
                         <h5 class="mb-0">Quick Actions</h5>
                     </div>
@@ -256,7 +256,7 @@ $assignments = $stmt->fetchAll();
                             </div>
                         </div>
                     </div>
-                </div>
+                </div> -->
             </main>
         </div>
     </div>

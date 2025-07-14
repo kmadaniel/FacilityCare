@@ -7,10 +7,27 @@ if (!isset($_SESSION['user_id']) || !isset($_SESSION['technician_id'])) {
     header("Location: ../login.php");
     exit();
 }
+
 $technicianId = $_SESSION['technician_id'];
 
-$stmt = $pdo->prepare("
-    SELECT r.*, s.status, s.timestamp 
+// Filters
+$statusFilter = $_GET['status'] ?? '';
+$categoryFilter = $_GET['category'] ?? '';
+$dateRange = $_GET['date'] ?? '';
+
+// Pagination
+$limit = 5;
+$page = isset($_GET['page']) && is_numeric($_GET['page']) ? (int) $_GET['page'] : 1;
+$offset = ($page - 1) * $limit;
+
+// Main query
+$query = "
+    SELECT r.*, s.status, s.timestamp,
+        (
+            SELECT timestamp FROM statuslog 
+            WHERE report_id = r.report_id AND status = 'in_progress' 
+            ORDER BY timestamp ASC LIMIT 1
+        ) AS start_time
     FROM report r
     JOIN (
         SELECT report_id, MAX(timestamp) AS latest_time
@@ -18,12 +35,78 @@ $stmt = $pdo->prepare("
         GROUP BY report_id
     ) latest ON r.report_id = latest.report_id
     JOIN statuslog s ON s.report_id = latest.report_id AND s.timestamp = latest.latest_time
-    WHERE s.status = 'resolved' AND r.technician_id = ?
-    ORDER BY s.timestamp DESC
-");
-$stmt->execute([$technicianId]);
+    WHERE r.technician_id = ? AND s.status = 'resolved'
+";
+$params = [$technicianId];
+
+// Apply filters
+if (!empty($categoryFilter)) {
+    $query .= " AND r.category = ?";
+    $params[] = $categoryFilter;
+}
+
+// if ($statusFilter === 'Completed') {
+//     $query .= " AND s.status = 'resolved'";
+// } elseif ($statusFilter === 'Cancelled') {
+//     $query .= " AND s.status = 'cancelled'";
+// }
+
+if ($dateRange === 'This Week') {
+    $query .= " AND s.timestamp >= DATE_SUB(CURDATE(), INTERVAL WEEKDAY(CURDATE()) DAY)";
+} elseif ($dateRange === 'This Month') {
+    $query .= " AND MONTH(s.timestamp) = MONTH(CURDATE()) AND YEAR(s.timestamp) = YEAR(CURDATE())";
+} elseif ($dateRange === 'Last Month') {
+    $query .= " AND MONTH(s.timestamp) = MONTH(CURDATE() - INTERVAL 1 MONTH) AND YEAR(s.timestamp) = YEAR(CURDATE() - INTERVAL 1 MONTH)";
+} elseif ($dateRange === 'Last 30 Days') {
+    $query .= " AND s.timestamp >= DATE_SUB(NOW(), INTERVAL 30 DAY)";
+}
+
+$query .= " ORDER BY s.timestamp DESC LIMIT $limit OFFSET $offset";
+
+$stmt = $pdo->prepare($query);
+$stmt->execute($params);
 $resolvedTasks = $stmt->fetchAll();
 
+// Count total for pagination
+$countQuery = "
+    SELECT COUNT(*) FROM report r
+    JOIN (
+        SELECT report_id, MAX(timestamp) AS latest_time
+        FROM statuslog
+        GROUP BY report_id
+    ) latest ON r.report_id = latest.report_id
+    JOIN statuslog s ON s.report_id = latest.report_id AND s.timestamp = latest.latest_time
+    WHERE r.technician_id = ? AND s.status = 'resolved'
+";
+$countParams = [$technicianId];
+
+if (!empty($categoryFilter)) {
+    $countQuery .= " AND r.category = ?";
+    $countParams[] = $categoryFilter;
+}
+if ($statusFilter === 'Completed') {
+    $countQuery .= " AND s.status = 'resolved'";
+} elseif ($statusFilter === 'Cancelled') {
+    $countQuery .= " AND s.status = 'cancelled'";
+}
+if ($dateRange === 'This Week') {
+    $countQuery .= " AND s.timestamp >= DATE_SUB(CURDATE(), INTERVAL WEEKDAY(CURDATE()) DAY)";
+} elseif ($dateRange === 'This Month') {
+    $countQuery .= " AND MONTH(s.timestamp) = MONTH(CURDATE()) AND YEAR(s.timestamp) = YEAR(CURDATE())";
+} elseif ($dateRange === 'Last Month') {
+    $countQuery .= " AND MONTH(s.timestamp) = MONTH(CURDATE() - INTERVAL 1 MONTH) AND YEAR(s.timestamp) = YEAR(CURDATE() - INTERVAL 1 MONTH)";
+} elseif ($dateRange === 'Last 30 Days') {
+    $countQuery .= " AND s.timestamp >= DATE_SUB(NOW(), INTERVAL 30 DAY)";
+}
+
+$countStmt = $pdo->prepare($countQuery);
+$countStmt->execute($countParams);
+$totalTasks = $countStmt->fetchColumn();
+$totalPages = ceil($totalTasks / $limit);
+
+// Get category list from DB
+$specialityStmt = $pdo->query("SELECT speciality_name FROM speciality");
+$categories = $specialityStmt->fetchAll(PDO::FETCH_COLUMN);
 ?>
 
 <!DOCTYPE html>
@@ -95,42 +178,43 @@ $resolvedTasks = $stmt->fetchAll();
                 </div>
 
                 <!-- Filters -->
+                <!-- Filters -->
                 <div class="card mb-4">
                     <div class="card-body">
-                        <form class="row g-3">
+                        <form class="row g-3" method="GET">
                             <div class="col-md-3">
                                 <label class="form-label">Date Range</label>
-                                <select class="form-select">
-                                    <option selected>Last 30 Days</option>
-                                    <option>This Week</option>
-                                    <option>This Month</option>
-                                    <option>Last Month</option>
-                                    <option>Custom Range</option>
+                                <select class="form-select" name="date">
+                                    <option value="Last 30 Days" <?= $dateRange === 'Last 30 Days' ? 'selected' : '' ?>>Last 30 Days</option>
+                                    <option value="This Week" <?= $dateRange === 'This Week' ? 'selected' : '' ?>>This Week</option>
+                                    <option value="This Month" <?= $dateRange === 'This Month' ? 'selected' : '' ?>>This Month</option>
+                                    <option value="Last Month" <?= $dateRange === 'Last Month' ? 'selected' : '' ?>>Last Month</option>
                                 </select>
                             </div>
-                            <div class="col-md-3">
+                            <!-- <div class="col-md-3">
                                 <label class="form-label">Status</label>
-                                <select class="form-select">
-                                    <option selected>All Statuses</option>
-                                    <option>Completed</option>
-                                    <option>Cancelled</option>
+                                <select class="form-select" name="status">
+                                    <option value="" <?= $statusFilter === '' ? 'selected' : '' ?>>All Statuses</option>
+                                    <option value="Completed" <?= $statusFilter === 'Completed' ? 'selected' : '' ?>>Completed</option>
+                                    <option value="Cancelled" <?= $statusFilter === 'Cancelled' ? 'selected' : '' ?>>Cancelled</option>
                                 </select>
-                            </div>
+                            </div> -->
                             <div class="col-md-3">
                                 <label class="form-label">Category</label>
-                                <select class="form-select">
-                                    <option selected>All Categories</option>
-                                    <option>Plumbing</option>
-                                    <option>Electrical</option>
-                                    <option>HVAC</option>
-                                    <option>Structural</option>
+                                <select class="form-select" name="category">
+                                    <option value="">All Categories</option>
+                                    <?php foreach ($categories as $cat): ?>
+                                        <option value="<?= htmlspecialchars($cat) ?>" <?= $categoryFilter === $cat ? 'selected' : '' ?>>
+                                            <?= htmlspecialchars($cat) ?>
+                                        </option>
+                                    <?php endforeach; ?>
                                 </select>
                             </div>
                             <div class="col-12">
                                 <div class="d-flex justify-content-end">
-                                    <button type="button" class="btn btn-outline-secondary me-2">
+                                    <a href="taskhistory.php" class="btn btn-outline-secondary me-2">
                                         <i class="fas fa-undo me-1"></i> Reset
-                                    </button>
+                                    </a>
                                     <button type="submit" class="btn btn-primary">
                                         <i class="fas fa-filter me-1"></i> Apply Filters
                                     </button>
@@ -140,7 +224,7 @@ $resolvedTasks = $stmt->fetchAll();
                     </div>
                 </div>
 
-                <!-- Work History List -->
+                <!-- Work History -->
                 <div class="card">
                     <div class="card-header">
                         <h5 class="mb-0">Completed Work Orders</h5>
@@ -148,15 +232,25 @@ $resolvedTasks = $stmt->fetchAll();
                     <div class="card-body">
                         <div class="list-group list-group-flush">
                             <?php foreach ($resolvedTasks as $task): ?>
-                                <a href="#" class="list-group-item list-group-item-action history-card mb-3">
+                                <?php
+                                // Duration calc
+                                $duration = 'N/A';
+                                if ($task['start_time']) {
+                                    $start = new DateTime($task['start_time']);
+                                    $end = new DateTime($task['timestamp']);
+                                    $diff = $start->diff($end);
+                                    $duration = ($diff->d * 24 + $diff->h) . 'h ' . $diff->i . 'm';
+                                }
+                                ?>
+                                <a href="taskDetail.php?report_id=<?= $task['report_id'] ?>" class="list-group-item list-group-item-action history-card mb-3">
                                     <div class="d-flex w-100 justify-content-between">
                                         <div>
                                             <h6 class="mb-1"><?= htmlspecialchars($task['title']) ?></h6>
                                             <div class="d-flex align-items-center mt-2">
                                                 <span class="badge bg-primary me-2"><?= htmlspecialchars($task['category']) ?></span>
-                                                <span class="badge badge-completed me-2">Resolved</span>
-                                                <span class="badge time-badge me-2">
-                                                    <i class="fas fa-clock me-1"></i> <?= /* kira masa dari log? */ "2h 15m" ?>
+                                                <span class="badge bg-success me-2">Resolved</span>
+                                                <span class="badge bg-secondary me-2">
+                                                    <i class="fas fa-clock me-1"></i> <?= $duration ?>
                                                 </span>
                                             </div>
                                         </div>
@@ -169,28 +263,32 @@ $resolvedTasks = $stmt->fetchAll();
                                             <small class="text-muted">Location:</small>
                                             <p class="mb-0"><?= htmlspecialchars($task['facilities']) ?></p>
                                         </div>
-                                        <div class="ms-auto">
+                                        <!-- <div class="ms-auto">
                                             <img src="https://via.placeholder.com/300x200?text=<?= urlencode($task['title']) ?>" class="media-preview" data-bs-toggle="modal" data-bs-target="#mediaModal">
-                                        </div>
+                                        </div> -->
                                     </div>
                                 </a>
                             <?php endforeach; ?>
                         </div>
 
                         <!-- Pagination -->
-                        <nav aria-label="Work history pagination" class="mt-4">
-                            <ul class="pagination justify-content-center">
-                                <li class="page-item disabled">
-                                    <a class="page-link" href="#" tabindex="-1">Previous</a>
-                                </li>
-                                <li class="page-item active"><a class="page-link" href="#">1</a></li>
-                                <li class="page-item"><a class="page-link" href="#">2</a></li>
-                                <li class="page-item"><a class="page-link" href="#">3</a></li>
-                                <li class="page-item">
-                                    <a class="page-link" href="#">Next</a>
-                                </li>
-                            </ul>
-                        </nav>
+                        <?php if ($totalPages > 1): ?>
+                            <nav class="mt-4">
+                                <ul class="pagination justify-content-center">
+                                    <li class="page-item <?= $page <= 1 ? 'disabled' : '' ?>">
+                                        <a class="page-link" href="?<?= http_build_query(array_merge($_GET, ['page' => $page - 1])) ?>">Previous</a>
+                                    </li>
+                                    <?php for ($i = 1; $i <= $totalPages; $i++): ?>
+                                        <li class="page-item <?= $i === $page ? 'active' : '' ?>">
+                                            <a class="page-link" href="?<?= http_build_query(array_merge($_GET, ['page' => $i])) ?>"><?= $i ?></a>
+                                        </li>
+                                    <?php endfor; ?>
+                                    <li class="page-item <?= $page >= $totalPages ? 'disabled' : '' ?>">
+                                        <a class="page-link" href="?<?= http_build_query(array_merge($_GET, ['page' => $page + 1])) ?>">Next</a>
+                                    </li>
+                                </ul>
+                            </nav>
+                        <?php endif; ?>
                     </div>
                 </div>
             </main>
