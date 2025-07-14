@@ -143,7 +143,7 @@ if (!isset($_SESSION['user_id'])) {
 
                             <div class="col-12">
                                 <div class="d-flex justify-content-end">
-                                    <a href="archivedReports.php" class="btn btn-outline-secondary me-2">
+                                    <a href="archived.php" class="btn btn-outline-secondary me-2">
                                         <i class="bi bi-arrow-counterclockwise me-1"></i> Reset
                                     </a>
                                     <button type="submit" class="btn btn-primary">
