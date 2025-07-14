@@ -101,7 +101,7 @@ $user = $stmt->fetch();
     <!-- Navbar (same as your profile page) -->
     <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
         <div class="container">
-            <a class="navbar-brand fw-bold" href="homepagestaff.php">
+            <a class="navbar-brand fw-bold" href="homepageStaff.php">
                 <i class="fas fa-tools me-2 text-primary"></i>FacilityCare
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
@@ -110,7 +110,7 @@ $user = $stmt->fetch();
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
                     <li class="nav-item">
-                        <a class="nav-link" href="homepagestaff.php"><i class="fas fa-home me-1"></i> Home</a>
+                        <a class="nav-link" href="homepageStaff.php"><i class="fas fa-home me-1"></i> Home</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="newReport.php"><i class="fas fa-plus-circle me-1"></i> New Report</a>
@@ -304,9 +304,9 @@ $user = $stmt->fetch();
                                 <h6 class="mb-2"><i class="fas fa-cogs me-2 text-primary"></i>Skills</h6>
                                 <div>
                                     <span class="skill-badge">HTML/CSS</span>
-                                    <span class="skill-badge">JavaScript</span>
-                                    <span class="skill-badge">React</span>
-                                    <span class="skill-badge">Figma</span>
+                                    <span class="skill-badge">Oracle</span>
+                                    <span class="skill-badge">MySQL</span>
+                                    <span class="skill-badge">MariaDB</span>
                                 </div>
                             </div>
 
