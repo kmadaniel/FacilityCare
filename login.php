@@ -89,67 +89,38 @@ if (isset($_GET['login']) && $_GET['login'] === 'failed') {
     <div class="form-container">
       <h2 class="text-center title">Login</h2>
       <p class="text-center subtitle">Sign in to continue</p>
-      <form action="backend/process_login.php" method="POST" onsubmit="return validateForm()">
+      <form action="backend/process_login.php" method="POST">
         <div class="mb-3 input-group">
           <span class="input-group-text"><i class="fa-solid fa-envelope"></i></span>
           <input type="email" name="email" class="form-control input-style" id="email"
             placeholder="Enter your email" required>
           <div class="invalid-feedback">Please enter a valid email address</div>
         </div>
+
         <div class="mb-3 input-group">
           <span class="input-group-text"><i class="fa-solid fa-lock"></i></span>
           <input type="password" name="password" class="form-control input-style" id="password"
-            placeholder="Enter password" minlength="6" required>
-          <div class="invalid-feedback">Password must be at least 6 characters</div>
+            placeholder="Enter password" required>
         </div>
+
         <button type="submit" class="btn btn-gold2 w-100">Login</button>
         <p class="text-center mt-3">Don't have an account? <a href="register.php">Register</a></p>
       </form>
 
       <script>
-        function validateForm() {
-          const form = document.forms[0];
-          const email = document.getElementById('email');
-          const password = document.getElementById('password');
-
-          // Reset validation styles
-          email.classList.remove('is-invalid');
-          password.classList.remove('is-invalid');
-
-          // Simple email validation
-          if (!email.value.includes('@') || !email.value.includes('.')) {
-            email.classList.add('is-invalid');
-            return false;
-          }
-
-          // Password length check
-          if (password.value.length < 6) {
-            password.classList.add('is-invalid');
-            return false;
-          }
-
-          return true;
-        }
-
-        // Add real-time validation
+        // Email validation sahaja
         document.getElementById('email').addEventListener('input', function() {
           if (this.value.includes('@') && this.value.includes('.')) {
             this.classList.remove('is-invalid');
             this.classList.add('is-valid');
           } else {
             this.classList.remove('is-valid');
+            this.classList.add('is-invalid');
           }
         });
+      </script>
 
-        document.getElementById('password').addEventListener('input', function() {
-          if (this.value.length >= 6) {
-            this.classList.remove('is-invalid');
-            this.classList.add('is-valid');
-          } else {
-            this.classList.remove('is-valid');
-          }
-        });
-
+      <script>
         // Auto show modal based on session messages
         document.addEventListener('DOMContentLoaded', function() {
           <?php if (isset($_SESSION['login_error'])): ?>
