@@ -3,6 +3,13 @@ if (!isset($_SESSION['user_id'])) {
     header("Location: homepage.php");
     exit();
 }
+
+// Get success message if it exists
+$successMessage = $_SESSION['success_message'] ?? null;
+// Clear it immediately after retrieving
+if (isset($_SESSION['success_message'])) {
+    unset($_SESSION['success_message']);
+}
 ?>
 
 <!DOCTYPE html>
@@ -157,55 +164,24 @@ if (!isset($_SESSION['user_id'])) {
                 </div>
             </div>
         </div>
+    </div>
 
-        <!-- Quick Report Stats
-        <div class="row">
-            <div class="col-md-6 mb-4">
-                <div class="card shadow-sm h-100">
-                    <div class="card-header bg-white">
-                        <h5 class="mb-0"><i class="fas fa-chart-pie me-2"></i>My Reports Summary</h5>
-                    </div>
-                    <div class="card-body">
-                        <canvas id="myReportsChart" height="200"></canvas>
-                        <div class="mt-3 text-center">
-                            <span class="badge bg-primary me-2">Pending (2)</span>
-                            <span class="badge bg-warning me-2">In Progress (1)</span>
-                            <span class="badge bg-success">Resolved (5)</span>
-                        </div>
-                    </div>
+    <!-- Success Modal -->
+    <div class="modal fade" id="successModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content border-success">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title">Login Successful</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <!-- Akan diisi guna JavaScript -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">OK</button>
                 </div>
             </div>
-            <div class="col-md-6 mb-4">
-                <div class="card shadow-sm h-100">
-                    <div class="card-header bg-white">
-                        <h5 class="mb-0"><i class="fas fa-fire-extinguisher me-2"></i>Urgent Issues</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="alert alert-danger">
-                            <div class="d-flex align-items-center">
-                                <i class="fas fa-exclamation-triangle fa-2x me-3"></i>
-                                <div>
-                                    <h6 class="alert-heading mb-1">Water Leak (Floor 3)</h6>
-                                    <p class="mb-0 small">High priority - Risk of property damage</p>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="alert alert-warning">
-                            <div class="d-flex align-items-center">
-                                <i class="fas fa-exclamation-circle fa-2x me-3"></i>
-                                <div>
-                                    <h6 class="alert-heading mb-1">Broken AC (Room 205)</h6>
-                                    <p class="mb-0 small">Medium priority - Comfort issue</p>
-                                </div>
-                            </div>
-                        </div>
-                        <a href="new-report.html" class="btn btn-outline-danger w-100">
-                            <i class="fas fa-plus me-2"></i>Report Urgent Issue
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </div> -->
+        </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
@@ -238,6 +214,28 @@ if (!isset($_SESSION['user_id'])) {
         });
     </script>
 
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            <?php if (!empty($successMessage)): ?>
+                // Create modal instance
+                var successModal = new bootstrap.Modal(document.getElementById('successModal'), {
+                    keyboard: false
+                });
+
+                // Set message content
+                document.querySelector('#successModal .modal-body').textContent = <?= json_encode($successMessage) ?>;
+
+                // Show modal
+                successModal.show();
+
+                // Optional: Auto-close after 3 seconds
+                setTimeout(function() {
+                    successModal.hide();
+                }, 3000);
+            <?php endif; ?>
+        });
+    </script>
+    
     <!-- Footer -->
     <footer class="bg-light py-4 mt-5 border-top">
         <div class="container text-center text-muted">

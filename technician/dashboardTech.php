@@ -8,6 +8,13 @@ if (!isset($_SESSION['user_id']) || !isset($_SESSION['technician_id'])) {
     exit();
 }
 
+// Get success message if it exists
+$successMessage = $_SESSION['success_message'] ?? null;
+// Clear it immediately after retrieving
+if (isset($_SESSION['success_message'])) {
+    unset($_SESSION['success_message']);
+}
+
 $technicianId = $_SESSION['technician_id'];
 
 // Assigned Tasks
@@ -260,7 +267,48 @@ $assignments = $stmt->fetchAll();
             </main>
         </div>
     </div>
+
+    <!-- Success Modal -->
+    <div class="modal fade" id="successModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content border-success">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title">Login Successful</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <!-- Akan diisi guna JavaScript -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">OK</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            <?php if (!empty($successMessage)): ?>
+                // Create modal instance
+                var successModal = new bootstrap.Modal(document.getElementById('successModal'), {
+                    keyboard: false
+                });
+
+                // Set message content
+                document.querySelector('#successModal .modal-body').textContent = <?= json_encode($successMessage) ?>;
+
+                // Show modal
+                successModal.show();
+
+                // Optional: Auto-close after 3 seconds
+                setTimeout(function() {
+                    successModal.hide();
+                }, 3000);
+            <?php endif; ?>
+        });
+    </script>
 </body>
 
 </html>
