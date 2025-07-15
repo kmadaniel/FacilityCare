@@ -1,9 +1,9 @@
 <?php
 // Database configuration
 $host = 'localhost'; // Hostname or IP address of the server
-$dbname = 'facilitycare'; // Name of the database
-$username = 'root'; // Database username
-$password = ''; // Database password
+$dbname = 'p25_facilitycare'; // Name of the database
+$username = 'facilitycare'; // Database username
+$password = '123456'; // Database password
 
 try {
     // Create a new PDO instance
