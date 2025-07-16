@@ -220,9 +220,9 @@ if (isset($_GET['archive'])) {
                                 </div>
                             </form>
                             <div class="dropdown">
-                                <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                <!-- <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
                                     <i class="bi bi-list-check me-1"></i> Columns
-                                </button>
+                                </button> -->
                                 <ul class="dropdown-menu dropdown-menu-end">
                                     <li>
                                         <h6 class="dropdown-header">Show/Hide Columns</h6>

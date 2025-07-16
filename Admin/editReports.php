@@ -439,7 +439,7 @@ foreach ($mediaFiles as $media) {
                                 </form>
 
 
-                                <hr>
+                                <!-- <hr>
 
                                 <div class="mb-4">
                                     <h6 class="mb-3">Quick Actions</h6>
@@ -451,7 +451,7 @@ foreach ($mediaFiles as $media) {
                                             <i class="bi bi-archive me-1"></i> Archive Report
                                         </button>
                                     </div>
-                                </div>
+                                </div> -->
 
                                 <hr>
 

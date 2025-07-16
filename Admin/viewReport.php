@@ -300,9 +300,9 @@
                                             <button class="btn btn-success" name="status" value="resolved" type="submit">
                                                 <i class="bi bi-check-circle me-1"></i> Mark as Resolved
                                             </button>
-                                            <button class="btn btn-outline-secondary" name="status" value="archived" type="submit">
+                                            <!-- <button class="btn btn-outline-secondary" name="status" value="archived" type="submit">
                                                 <i class="bi bi-archive me-1"></i> Archive Report
-                                            </button>
+                                            </button> -->
                                         </div>
                                     </form>
                                 </div>
