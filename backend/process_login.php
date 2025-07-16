@@ -73,8 +73,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $_SESSION['technician_id'] = $user['user_id'];
         }
 
-        // Success message for modal
-        $_SESSION['success_message'] = "Welcome back, " . $user['name'] . "!";
+        // // Success message for modal
+        // $_SESSION['success_message'] = "Welcome back, " . $user['name'] . "!";
 
         header("Location: $redirect");
         exit();
